@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Headers, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { UserAgent } from '../../../common/decorators/user-agent.decorator.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { toPage } from '../../../common/dto/pagination.dto.js';
@@ -28,7 +29,7 @@ export class AppRetailersController {
   async register(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: RegisterRetailerRequestDto,
-    @Headers('user-agent') ua?: string,
+    @UserAgent() ua?: string,
   ): Promise<AuthTokensResponseDto> {
     if (!user.phone) throw AppException.rule(ErrorCode.REGISTRATION_REQUIRED, 'Verify your phone number first.');
     const retailer = await this.retailers.register(user.phone, {
@@ -63,7 +64,8 @@ export class AppRetailersController {
 
 @ApiTags('App · Stores')
 @ApiBearerAuth()
-@Roles('plumber', 'retailer')
+// Guests may list stores too: a plumber picks a preferred dealer while registering.
+@Roles('plumber', 'retailer', 'guest')
 @Controller('app/stores')
 export class AppStoresController {
   constructor(private readonly retailers: RetailersService) {}

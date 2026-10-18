@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Headers, Patch, Post, HttpCode, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { UserAgent } from '../../../common/decorators/user-agent.decorator.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { AppException, ErrorCode } from '../../../common/errors/app.exception.js';
@@ -27,7 +28,7 @@ export class AppPlumbersController {
   async register(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: RegisterPlumberRequestDto,
-    @Headers('user-agent') ua?: string,
+    @UserAgent() ua?: string,
   ): Promise<AuthTokensResponseDto> {
     if (!user.phone) throw AppException.rule(ErrorCode.REGISTRATION_REQUIRED, 'Verify your phone number first.');
     const plumber = await this.plumbers.register(user.phone, {

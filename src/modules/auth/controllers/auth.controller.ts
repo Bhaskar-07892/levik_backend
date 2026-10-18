@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { UserAgent } from '../../../common/decorators/user-agent.decorator.js';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
@@ -21,7 +22,7 @@ export class AuthController {
   @Throttle(STRICT)
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
-  async adminLogin(@Body() body: AdminLoginRequestDto, @Headers('user-agent') ua?: string): Promise<AuthTokensResponseDto> {
+  async adminLogin(@Body() body: AdminLoginRequestDto, @UserAgent() ua?: string): Promise<AuthTokensResponseDto> {
     return AuthMapper.tokensToDto(await this.auth.adminLogin(body.email, body.password, ua));
   }
 
@@ -37,7 +38,7 @@ export class AuthController {
   @Throttle(STRICT)
   @Post('otp/verify')
   @HttpCode(HttpStatus.OK)
-  async verifyOtp(@Body() body: OtpVerifyRequestDto, @Headers('user-agent') ua?: string): Promise<AuthTokensResponseDto> {
+  async verifyOtp(@Body() body: OtpVerifyRequestDto, @UserAgent() ua?: string): Promise<AuthTokensResponseDto> {
     return AuthMapper.tokensToDto(await this.auth.verifyOtp(body.phone, body.code, body.role, ua));
   }
 
@@ -45,7 +46,7 @@ export class AuthController {
   @Throttle(STRICT)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() body: RefreshTokenRequestDto, @Headers('user-agent') ua?: string): Promise<AuthTokensResponseDto> {
+  async refresh(@Body() body: RefreshTokenRequestDto, @UserAgent() ua?: string): Promise<AuthTokensResponseDto> {
     return AuthMapper.tokensToDto(await this.auth.refresh(body.refreshToken, ua));
   }
 
