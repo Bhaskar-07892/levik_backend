@@ -33,6 +33,11 @@ export class AuditService {
     return { ...page, items: page.items.map(AuditMapper.logToBo) };
   }
 
+  /** Rows for CSV export (newest first, capped). */
+  async exportRows(query: Omit<AuditQueryBo, 'page' | 'pageSize'>, limit = 10_000): Promise<AuditLogBo[]> {
+    return (await this.auditLogs.findForExport(query, limit)).map(AuditMapper.logToBo);
+  }
+
   async filterOptions(): Promise<{ entityTypes: readonly string[]; admins: string[] }> {
     return { entityTypes: AUDIT_ENTITIES, admins: await this.auditLogs.distinctAdminNames() };
   }

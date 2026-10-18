@@ -3,7 +3,7 @@ import Joi from 'joi';
 /** Fails fast at boot when required configuration is missing or malformed. */
 export const envValidationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'test', 'production').default('development'),
-  PORT: Joi.number().port().default(4000),
+  PORT: Joi.number().port().default(4100),
   API_PREFIX: Joi.string().default('api'),
   CORS_ORIGINS: Joi.string().default('http://localhost:3020'),
 

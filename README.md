@@ -36,8 +36,9 @@ npm run start:dev
 
 `db:seed` runs the migrations and loads the demo data. Use `npm run db:reset` to wipe and reseed.
 
-- API: http://localhost:4000/api/v1
-- Swagger UI: http://localhost:4000/api/docs (disabled when `NODE_ENV=production`)
+- API: http://localhost:4100/api/v1
+- Swagger UI: http://localhost:4100/api/docs (disabled when `NODE_ENV=production`)
+- OpenAPI JSON: http://localhost:4100/api/docs/openapi.json. The admin portal generates its typed client from this with `npm run api:types`.
 - Health: `GET /api/v1/health/live` and `GET /api/v1/health/ready` (checks the database)
 
 ### Demo accounts (local only)
@@ -108,10 +109,10 @@ All routes are prefixed with `/api/v1`. Swagger lists every request and response
 | Invoices | list, review, start-review, approve, reject, request-info | submit, list, detail, incentive preview, resubmit |
 | Points | ledger, totals, balances, manual adjustments | `GET /app/wallet`, `/app/wallet/transactions` |
 | Rewards / redemptions | CRUD, stock adjustments; approve, status transitions | catalogue (with `pointsShort`), request, list, cancel |
-| Schemes | CRUD, activate, pause, complete, participants and progress | `GET /app/schemes` with my progress |
+| Schemes | CRUD, activate, pause, complete, participants; `GET /admin/schemes/progress?userId=` (one participant across live schemes) | `GET /app/schemes` with my progress |
 | Inventory / support | list, summary, update; tickets, notes, status | report stock; raise and track tickets |
 | Reports | `/admin/reports/*?period=7d\|30d\|90d\|all&format=csv` | |
-| Audit / settings | audit logs + filters; settings | `GET /app/settings` |
+| Audit / settings | audit logs + filters, `export.csv`; settings | `GET /app/settings` |
 | Uploads | `POST /uploads` (multipart), `GET /uploads/:key` (owner or admin) | same |
 | Public | `GET /public/labels/verify?code=` | |
 
@@ -194,8 +195,18 @@ See [.env.example](.env.example). The app refuses to start if a required variabl
 - `STORAGE_DIR`: local disk storage. Behind the `StorageDriver` interface it can be swapped for S3 or GCS.
 - `DB_RUN_MIGRATIONS=false` if migrations are run as a separate deploy step.
 
+## Admin portal
+
+The admin portal (`levik-admin`) is wired to this API. It needs:
+
+- its origin listed in `CORS_ORIGINS` (default `http://localhost:3020`);
+- `NEXT_PUBLIC_API_URL` set to this API's origin.
+
+After changing a DTO, regenerate the portal's types: run `npm run api:types` in `levik-admin` while the API is running.
+
+When a DTO field uses a validator the Swagger plugin cannot read (for example `@NotEquals`), add an explicit `@ApiProperty`. Otherwise the field is missing from the spec and from the generated client.
+
 ## Not yet done
 
-- The admin portal still runs on its localStorage mock. Wiring it to this API is the next step.
 - Msg91 SMS delivery is implemented but untested against the live provider.
 - Aadhaar/KYC, courier and voucher integrations are recorded manually by admins.

@@ -237,6 +237,25 @@ describe('Levik API (e2e)', () => {
       expect(res.status).toBe(200);
     });
 
+    it("returns one participant's progress across live schemes", async () => {
+      const res = await http.get(api('/admin/schemes/progress')).query({ userId: 'RTL-2001' }).set('authorization', admin);
+      expect(res.status).toBe(200);
+      expect(res.body.length).toBeGreaterThan(0);
+      expect(res.body.every((s: { role: string }) => s.role === 'retailer')).toBe(true);
+      expect(res.body[0]).toEqual(expect.objectContaining({ progress: expect.any(Number), percent: expect.any(Number), awarded: expect.any(Boolean) }));
+      expect((await http.get(api('/admin/schemes/progress')).query({ userId: 'PLM-9999' }).set('authorization', admin)).status).toBe(404);
+    });
+
+    it('exports the filtered audit log as CSV', async () => {
+      const res = await http.get(api('/admin/audit-logs/export.csv')).query({ entityType: 'Scan' }).set('authorization', admin);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('text/csv');
+      const [header, ...rows] = res.text.trim().split('\n');
+      expect(header).toBe('timestamp,admin,action,entity,reference,summary');
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((r) => r.includes(',Scan,'))).toBe(true);
+    });
+
     it('exports reports as CSV', async () => {
       const res = await http.get(api('/admin/reports/points?period=all&format=csv')).set('authorization', admin);
       expect(res.status).toBe(200);

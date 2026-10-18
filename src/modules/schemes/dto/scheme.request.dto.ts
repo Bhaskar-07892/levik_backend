@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMinSize, ArrayUnique, IsArray, IsDate, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { ArrayMinSize, ArrayUnique, IsArray, IsDate, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import {
   PRODUCT_CATEGORIES,
   SCHEME_STATUSES,
@@ -52,4 +52,10 @@ export class SchemeQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: USER_ROLES })
   @IsOptional() @IsIn(USER_ROLES)
   role?: UserRole;
+}
+
+export class SchemeProgressQueryDto {
+  /** Plumber (PLM-…) or retailer (RTL-…) id. */
+  @IsString() @IsNotEmpty()
+  userId: string;
 }

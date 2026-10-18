@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDate, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, NotEquals } from 'class-validator';
 import { POINTS_SOURCES, RELATED_ENTITIES, USER_ROLES, type PointsSource, type RelatedEntity, type UserRole } from '../../../common/domain/enums.js';
@@ -52,7 +52,8 @@ export class AdjustPointsRequestDto extends ReasonRequestDto {
   @IsNotEmpty()
   userId: string;
 
-  /** Positive to credit, negative to debit. */
+  // Explicit schema: the Swagger plugin drops properties validated with @NotEquals.
+  @ApiProperty({ type: 'integer', minimum: -1_000_000, maximum: 1_000_000, description: 'Positive to credit, negative to debit (never 0).' })
   @IsInt()
   @NotEquals(0)
   @Min(-1_000_000)

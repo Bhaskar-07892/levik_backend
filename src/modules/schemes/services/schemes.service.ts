@@ -5,6 +5,7 @@ import { AppException, ErrorCode } from '../../../common/errors/app.exception.js
 import type { Page } from '../../../common/dto/pagination.dto.js';
 import { TransactionService } from '../../../database/transaction.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
+import { ParticipantsRepository } from '../../participants/repositories/participants.repository.js';
 import type {
   MySchemeProgressBo,
   SchemeBo,
@@ -26,6 +27,7 @@ export class SchemesService {
     private readonly schemes: SchemesRepository,
     private readonly tx: TransactionService,
     private readonly audit: AuditService,
+    private readonly participantDirectory: ParticipantsRepository,
   ) {}
 
   async list(query: SchemeQueryBo): Promise<Page<SchemeWithSummaryBo>> {
@@ -113,6 +115,13 @@ export class SchemesService {
         return { ...SchemeMapper.toBo(s), progress, percent: SchemeMapper.percent(progress, s.targetValue), awarded: awards.has(s.id) };
       }),
     );
+  }
+
+  /** A participant's progress in every live scheme for their role (admin view of a plumber/retailer). */
+  async progressFor(userId: string): Promise<MySchemeProgressBo[]> {
+    const participant = await this.participantDirectory.findById(userId);
+    if (!participant) throw AppException.notFound('Participant', userId);
+    return this.myProgress(userId, participant.role);
   }
 
   private async transition(actor: ActorBo, id: string, from: SchemeStatus[], to: SchemeStatus, action: string, reason?: string): Promise<SchemeBo> {

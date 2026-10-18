@@ -47,7 +47,8 @@ export class CreateRewardRequestDto {
 export class UpdateRewardRequestDto extends PartialType(OmitType(CreateRewardRequestDto, ['stock'] as const)) {}
 
 export class AdjustRewardStockRequestDto extends ReasonRequestDto {
-  /** Positive to add units, negative to remove. Stock can never go below zero. */
+  // Explicit schema: the Swagger plugin drops properties validated with @NotEquals.
+  @ApiProperty({ type: 'integer', minimum: -1_000_000, maximum: 1_000_000, description: 'Units to add (positive) or remove (negative). Stock never goes below zero.' })
   @IsInt() @NotEquals(0) @Min(-1_000_000) @Max(1_000_000)
   delta: number;
 }

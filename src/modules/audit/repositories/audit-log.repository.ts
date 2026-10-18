@@ -16,6 +16,19 @@ export class AuditLogRepository extends BaseRepository<AuditLogDao> {
   }
 
   async findPage(query: AuditQueryBo): Promise<Page<AuditLogDao>> {
+    const [items, total] = await this.filtered(query)
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize)
+      .getManyAndCount();
+    return { items, total, page: query.page, pageSize: query.pageSize };
+  }
+
+  /** Newest first, at most `limit` rows (CSV export). */
+  findForExport(query: Omit<AuditQueryBo, 'page' | 'pageSize'>, limit: number): Promise<AuditLogDao[]> {
+    return this.filtered(query).take(limit).getMany();
+  }
+
+  private filtered(query: Omit<AuditQueryBo, 'page' | 'pageSize'>) {
     const qb = this.repo().createQueryBuilder('a').orderBy('a.at', 'DESC').addOrderBy('a.id', 'DESC');
     if (query.entityType) qb.andWhere('a.entityType = :entityType', { entityType: query.entityType });
     if (query.adminName) qb.andWhere('a.adminName = :adminName', { adminName: query.adminName });
@@ -24,11 +37,7 @@ export class AuditLogRepository extends BaseRepository<AuditLogDao> {
     if (query.search) {
       qb.andWhere('(a.action ILIKE :q OR a.entityId ILIKE :q OR a.summary ILIKE :q)', { q: likePattern(query.search) });
     }
-    const [items, total] = await qb
-      .skip((query.page - 1) * query.pageSize)
-      .take(query.pageSize)
-      .getManyAndCount();
-    return { items, total, page: query.page, pageSize: query.pageSize };
+    return qb;
   }
 
   async distinctAdminNames(): Promise<string[]> {

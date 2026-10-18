@@ -28,8 +28,9 @@ export class ReportQueryDto {
   @IsOptional() @IsIn(['day', 'week', 'month'])
   bucket?: Bucket;
 
+  @ApiPropertyOptional({ default: 10, minimum: 1, maximum: 100 })
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100)
-  limit = 10;
+  limit: number = 10;
 
   @ApiPropertyOptional({ enum: ['json', 'csv'], default: 'json' })
   @IsOptional() @IsIn(['json', 'csv'])
@@ -115,4 +116,40 @@ export class NotificationsResponseDto {
   /** Sidebar badge counts. */
   counts: QueueCountsDto;
   items: AdminNotificationDto[];
+}
+
+export class ScansByStatusRowDto {
+  status: string;
+  count: number;
+}
+
+export class TopRetailerRowDto {
+  retailerId: string;
+  name: string;
+  city: string;
+  invoices: number;
+  /** Approved invoice value (pre-GST, ₹). */
+  sales: number;
+  points: number;
+}
+
+export class TopProductRowDto {
+  productId: string;
+  name: string;
+  modelCode: string;
+  category: string;
+  scans: number;
+  approved: number;
+  points: number;
+}
+
+export class SchemePerformanceRowDto {
+  schemeId: string;
+  name: string;
+  role: string;
+  status: string;
+  participants: number;
+  achievers: number;
+  averagePercent: number;
+  bonusPointsIssued: number;
 }

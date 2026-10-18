@@ -1,10 +1,23 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
-import { ApiBearerAuth, ApiProduces, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiProduces, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { toCsv } from '../../../common/utils/csv.util.js';
 import { resolvePeriod, type Bucket } from '../../../common/utils/period.util.js';
-import { DashboardQueryDto, DashboardResponseDto, NotificationsResponseDto, ReportQueryDto, SearchQueryDto, SearchResultDto } from '../dto/analytics.dto.js';
+import {
+  DashboardQueryDto,
+  DashboardResponseDto,
+  NotificationsResponseDto,
+  PointsPointDto,
+  ReportQueryDto,
+  SalesPointDto,
+  ScansByStatusRowDto,
+  SchemePerformanceRowDto,
+  SearchQueryDto,
+  SearchResultDto,
+  TopProductRowDto,
+  TopRetailerRowDto,
+} from '../dto/analytics.dto.js';
 import { AnalyticsService } from '../services/analytics.service.js';
 
 const DAY = 86_400_000;
@@ -45,36 +58,42 @@ export class AdminReportsController {
 
   @Get('sales')
   @ApiProduces('application/json', 'text/csv')
+  @ApiOkResponse({ type: [SalesPointDto], description: 'JSON rows, or CSV when format=csv' })
   async sales(@Query() q: ReportQueryDto, @Res({ passthrough: true }) res: Response) {
     return this.respond(res, q, 'verified-sales', await this.analytics.salesByPeriod(this.range(q), this.bucket(q)));
   }
 
   @Get('points')
   @ApiProduces('application/json', 'text/csv')
+  @ApiOkResponse({ type: [PointsPointDto], description: 'JSON rows, or CSV when format=csv' })
   async points(@Query() q: ReportQueryDto, @Res({ passthrough: true }) res: Response) {
     return this.respond(res, q, 'points', await this.analytics.pointsByPeriod(this.range(q), this.bucket(q)));
   }
 
   @Get('scans-by-status')
   @ApiProduces('application/json', 'text/csv')
+  @ApiOkResponse({ type: [ScansByStatusRowDto], description: 'JSON rows, or CSV when format=csv' })
   async scansByStatus(@Query() q: ReportQueryDto, @Res({ passthrough: true }) res: Response) {
     return this.respond(res, q, 'scans-by-status', await this.analytics.scansByStatus(this.range(q)));
   }
 
   @Get('top-retailers')
   @ApiProduces('application/json', 'text/csv')
+  @ApiOkResponse({ type: [TopRetailerRowDto], description: 'JSON rows, or CSV when format=csv' })
   async topRetailers(@Query() q: ReportQueryDto, @Res({ passthrough: true }) res: Response) {
     return this.respond(res, q, 'top-retailers', await this.analytics.topRetailers(this.range(q), q.limit));
   }
 
   @Get('top-products')
   @ApiProduces('application/json', 'text/csv')
+  @ApiOkResponse({ type: [TopProductRowDto], description: 'JSON rows, or CSV when format=csv' })
   async topProducts(@Query() q: ReportQueryDto, @Res({ passthrough: true }) res: Response) {
     return this.respond(res, q, 'top-products', await this.analytics.topProducts(this.range(q), q.limit));
   }
 
   @Get('scheme-performance')
   @ApiProduces('application/json', 'text/csv')
+  @ApiOkResponse({ type: [SchemePerformanceRowDto], description: 'JSON rows, or CSV when format=csv' })
   async schemePerformance(@Query() q: ReportQueryDto, @Res({ passthrough: true }) res: Response) {
     return this.respond(res, q, 'scheme-performance', await this.analytics.schemePerformance());
   }

@@ -6,7 +6,7 @@ import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { toPage } from '../../../common/dto/pagination.dto.js';
 import { ReasonRequestDto } from '../../../common/dto/reason.request.dto.js';
 import type { AuthenticatedUser, ParticipantRole } from '../../../common/interfaces/authenticated-user.interface.js';
-import { CreateSchemeRequestDto, SchemeQueryDto, UpdateSchemeRequestDto } from '../dto/scheme.request.dto.js';
+import { CreateSchemeRequestDto, SchemeProgressQueryDto, SchemeQueryDto, UpdateSchemeRequestDto } from '../dto/scheme.request.dto.js';
 import {
   MySchemeProgressResponseDto,
   SchemePageResponseDto,
@@ -33,6 +33,12 @@ export class AdminSchemesController {
   @Get('status-counts')
   statusCounts(): Promise<Record<string, number>> {
     return this.schemes.statusCounts();
+  }
+
+  /** One plumber's or retailer's progress in every live scheme for their role. */
+  @Get('progress')
+  async progress(@Query() query: SchemeProgressQueryDto): Promise<MySchemeProgressResponseDto[]> {
+    return (await this.schemes.progressFor(query.userId)).map(SchemeMapper.myProgressToDto);
   }
 
   @Get(':id')
