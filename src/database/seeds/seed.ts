@@ -1,7 +1,8 @@
 /**
  * Seeds the database with the Levik demo dataset (the same records as the offline admin demo).
  *   npm run db:seed            # only when the database is empty
- *   npm run db:seed -- --reset # wipe all programme data first (never in production)
+ *   npm run db:seed -- --reset # wipe all programme data first: local databases only, unless ALLOW_DB_RESET=true
+ *                              # (e.g. your own Neon dev branch); always refused when NODE_ENV=production
  * Demo admin: admin@levik.demo / LevikDemo@123
  */
 import 'dotenv/config';
@@ -185,10 +186,20 @@ export async function seedDemoData(ds: DataSource, options: { reset: boolean }):
   });
 }
 
+/** Wiping data is only allowed on a local database, or on a remote one explicitly marked as disposable. */
+function assertResetAllowed(url: string): void {
+  if (process.env.NODE_ENV === 'production') throw new Error('Refusing to reset: NODE_ENV=production.');
+  const host = new URL(url).hostname;
+  const local = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(host);
+  if (!local && process.env.ALLOW_DB_RESET !== 'true') {
+    throw new Error(`Refusing to reset the remote database at ${host}. Set ALLOW_DB_RESET=true only if this is your own disposable dev branch.`);
+  }
+}
+
 // Run directly: tsx src/database/seeds/seed.ts [--reset]
 if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
   const reset = process.argv.includes('--reset');
-  if (reset && process.env.NODE_ENV === 'production') throw new Error('Refusing to reset a production database.');
+  if (reset) assertResetAllowed(process.env.DATABASE_MIGRATION_URL || process.env.DATABASE_URL || '');
   await dataSource.initialize();
   try {
     await dataSource.runMigrations();

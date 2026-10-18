@@ -1,6 +1,8 @@
 // Runs before any test module is imported, so ConfigModule sees these values (process.env wins over .env).
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost:5432/levik_test';
+process.env.DATABASE_MIGRATION_URL = process.env.DATABASE_URL;
+process.env.DB_SSL = 'false';
 process.env.DB_RUN_MIGRATIONS = 'true';
 process.env.DB_POOL_SIZE = '5';
 process.env.JWT_ACCESS_SECRET = 'e2e-access-secret-e2e-access-secret-0123456789';

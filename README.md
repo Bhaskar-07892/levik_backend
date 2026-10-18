@@ -52,6 +52,28 @@ npm run start:dev
 
 `OTP_TEST_CODES` is ignored when `NODE_ENV=production`.
 
+## Environments (Neon)
+
+The team uses three Neon projects in `ap-southeast-1` (Singapore): `levik-dev`, `levik-staging` and `levik-prod`.
+
+| | dev | staging | prod |
+|---|---|---|---|
+| Database | your own branch of `levik-dev` (`main` holds the shared seed) | `levik-staging` | `levik-prod` |
+| Seed / reset | `db:seed`; `db:reset` with `ALLOW_DB_RESET=true` | `db:seed` for demos | never |
+| Migrations | `npm run migration:run` | `npm run migration:run` before deploying | `npm run migration:run` after branching a backup |
+| Secrets | your own `.env` (git-ignored) | hosting platform | hosting platform |
+
+**Joining as a developer:**
+1. Ask an admin to invite you to the Neon organisation as a Collaborator on `levik-dev`.
+2. In `levik-dev`, create a branch named `dev-<your name>` from `main`.
+3. Copy its pooled and direct connection strings into `.env` as `DATABASE_URL` and `DATABASE_MIGRATION_URL`, and set `DB_SSL=true` and `DB_RUN_MIGRATIONS=false`.
+4. Run `npm run migration:run`, then `npm run start:dev`.
+
+**Rules:**
+- **Migrations and seeding** use `DATABASE_MIGRATION_URL`, the direct connection, when it is set. The app always uses the pooled `DATABASE_URL`.
+- **`db:reset`** refuses to wipe a remote database unless `ALLOW_DB_RESET=true`, and always refuses when `NODE_ENV=production`. Never set `ALLOW_DB_RESET` on staging or prod.
+- **Before a prod migration**, create a branch of `levik-prod` (for example `backup-2026-10-19`) as an instant restore point.
+
 ## Scripts
 
 | Command                    | Purpose                                                          |
@@ -62,8 +84,8 @@ npm run start:dev
 | `npm run lint`             | oxlint                                                           |
 | `npm test`                 | Unit tests (serial codes, QR signing, utilities)                 |
 | `npm run test:e2e`         | Full HTTP tests against a disposable `levik_test` database (`createdb levik_test` first, or set `TEST_DATABASE_URL`) |
-| `npm run migration:run` / `migration:revert` | Apply or roll back migrations                  |
-| `npm run db:seed` / `db:reset` | Migrate and seed demo data (`db:reset` truncates first; refused in production) |
+| `npm run migration:run` / `migration:revert` / `migration:show` | Apply, roll back or list migrations (uses `DATABASE_MIGRATION_URL` if set) |
+| `npm run db:seed` / `db:reset` | Migrate and seed demo data (`db:reset` truncates first; local databases only unless `ALLOW_DB_RESET=true`; never in production) |
 
 ## Project structure
 

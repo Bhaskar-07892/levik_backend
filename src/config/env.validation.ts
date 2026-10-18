@@ -8,6 +8,10 @@ export const envValidationSchema = Joi.object({
   CORS_ORIGINS: Joi.string().default('http://localhost:3020'),
 
   DATABASE_URL: Joi.string().uri({ scheme: ['postgres', 'postgresql'] }).required(),
+  // Direct (non-pooled) connection for migrations and seeding; falls back to DATABASE_URL.
+  DATABASE_MIGRATION_URL: Joi.string().uri({ scheme: ['postgres', 'postgresql'] }).optional(),
+  // Allows `npm run db:reset` against a non-local database (e.g. a developer's own Neon branch).
+  ALLOW_DB_RESET: Joi.boolean().default(false),
   DB_SSL: Joi.boolean().default(false),
   DB_LOGGING: Joi.boolean().default(false),
   DB_RUN_MIGRATIONS: Joi.boolean().default(true),
