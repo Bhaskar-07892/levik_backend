@@ -16,6 +16,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { ExploreModule } from './modules/explore/explore.module.js';
 import { InventoryModule } from './modules/inventory/inventory.module.js';
 import { InvoicesModule } from './modules/invoices/invoices.module.js';
 import { LabelsModule } from './modules/labels/labels.module.js';
@@ -77,6 +78,7 @@ import { UploadsModule } from './modules/uploads/uploads.module.js';
     RewardsModule,
     RedemptionsModule,
     InventoryModule,
+    ExploreModule,
     SupportModule,
     AnalyticsModule,
     HealthModule,

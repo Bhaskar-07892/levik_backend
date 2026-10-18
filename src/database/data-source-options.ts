@@ -1,8 +1,9 @@
 import type { DataSourceOptions } from 'typeorm';
 import { ENTITIES } from './entities.js';
 import { InitialSchema1760900000000 } from './migrations/1760900000000-initial-schema.js';
+import { ExploreIndexes1761000000000 } from './migrations/1761000000000-explore-indexes.js';
 
-export const MIGRATIONS = [InitialSchema1760900000000];
+export const MIGRATIONS = [InitialSchema1760900000000, ExploreIndexes1761000000000];
 
 export interface DatabaseSettings {
   url: string;

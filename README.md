@@ -126,6 +126,7 @@ All routes are prefixed with `/api/v1`. Swagger lists every request and response
 | Dashboard and search | `GET /admin/dashboard?period=`, `/admin/search?q=`, `/admin/notifications` | |
 | Plumbers / retailers | list, detail, edit, verification, review, account status | `POST /app/plumbers/register`, `/app/retailers/register`, `GET/PATCH …/me`, `POST /app/plumbers/me/kyc`, `GET /app/stores` |
 | Products | CRUD, status | `GET /app/products`, `/app/products/barcode/:code` |
+| Explore | | `GET /app/explore/products`, `/app/explore/products/:id` (dealers stocking it, nearby first), `/app/explore/dealers`, `/app/explore/dealers/:id` (products in stock with role-specific points and live schemes) |
 | QR labels | `POST /admin/products/:id/label-batches`, batch list and detail, `labels.pdf`, `labels.csv`, unit lookup and void | `GET /app/labels/resolve?code=` |
 | Scans | list, status counts, review, approve, reject, flag | `POST /app/scans`, list, detail |
 | Invoices | list, review, start-review, approve, reject, request-info | submit, list, detail, incentive preview, resubmit |

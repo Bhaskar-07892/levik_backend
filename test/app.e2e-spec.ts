@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { buildDataSourceOptions } from '../src/database/data-source-options.js';
 import { DEMO_PASSWORD, seedDemoData } from '../src/database/seeds/seed.js';
+import { TokenService } from '../src/modules/auth/services/token.service.js';
 import { setupApp } from '../src/setup-app.js';
 
 /**
@@ -217,6 +218,59 @@ describe('Levik API (e2e)', () => {
         .send({ name: 'Test Fitter', city: 'Jaipur', state: 'Rajasthan', pincode: '302001' });
       expect(reg.status).toBe(201);
       expect(reg.body.user).toMatchObject({ role: 'plumber', name: 'Test Fitter' });
+    });
+  });
+
+  describe('explore (where to buy, what it earns)', () => {
+    // Tokens straight from the TokenService: the OTP flow is covered above and rate-limits repeat requests per number.
+    const signIn = async (phone: string) => {
+      const sub = phone === '9829041127' ? { sub: 'RTL-2001', role: 'retailer' as const } : { sub: 'PLM-1001', role: 'plumber' as const };
+      const tokens = await app.get(TokenService).issue({ ...sub, phone: `91${phone}` });
+      return `Bearer ${tokens.accessToken}`;
+    };
+
+    it('lists products with role-specific earnings and dealer counts', async () => {
+      const plumber = await signIn('9829011234');
+      const res = await http.get(api('/app/explore/products')).query({ pageSize: 50 }).set('authorization', plumber);
+      expect(res.status).toBe(200);
+      const wc = res.body.items.find((p: { id: string }) => p.id === 'PRD-103');
+      expect(wc).toMatchObject({ earning: { points: 350, basis: 'per approved scan' } });
+      expect(wc.dealersInStock).toBeGreaterThan(0);
+      expect(wc.earning.schemes.map((s: { id: string }) => s.id)).toContain('SCH-402');
+      expect(wc).not.toHaveProperty('mrp');
+    });
+
+    it('shows dealers stocking a product with the caller city first', async () => {
+      const plumber = await signIn('9829011234');
+      const res = await http.get(api('/app/explore/products/PRD-103')).set('authorization', plumber);
+      expect(res.status).toBe(200);
+      expect(res.body.city).toBe('Jaipur');
+      expect(res.body.dealers[0]).toMatchObject({ id: 'RTL-2001', sameCity: true });
+      expect(res.body.dealers.every((d: { quantity: number }) => d.quantity > 0)).toBe(true);
+    });
+
+    it('shows a dealer with every product in stock and what each earns', async () => {
+      const plumber = await signIn('9829011234');
+      const res = await http.get(api('/app/explore/dealers/RTL-2001')).set('authorization', plumber);
+      expect(res.status).toBe(200);
+      expect(res.body.dealer.shopName).toBe('Sharma Sanitary Store');
+      expect(res.body.products.length).toBeGreaterThan(0);
+      expect(res.body.products[0]).toEqual(expect.objectContaining({ quantity: expect.any(Number), stockLevel: expect.any(String), earning: expect.any(Object) }));
+      expect((await http.get(api('/app/explore/dealers/RTL-9999')).set('authorization', plumber)).status).toBe(404);
+    });
+
+    it('gives retailers the invoice incentive per unit instead of scan points', async () => {
+      const retailer = await signIn('9829041127');
+      const res = await http.get(api('/app/explore/products/PRD-103')).set('authorization', retailer);
+      expect(res.status).toBe(200);
+      // 1 pt per ₹100 of MRP ₹18,500 → 185 pts per unit.
+      expect(res.body.product.earning).toMatchObject({ points: 185, basis: 'per unit invoiced at MRP' });
+      const dealers = await http.get(api('/app/explore/dealers')).set('authorization', retailer);
+      expect(dealers.body.dealers.length).toBeGreaterThan(0);
+    });
+
+    it('is not available to admins', async () => {
+      expect((await http.get(api('/app/explore/products')).set('authorization', admin)).status).toBe(403);
     });
   });
 
