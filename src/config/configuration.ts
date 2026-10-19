@@ -1,11 +1,17 @@
 import { registerAs } from '@nestjs/config';
 
+/** development | staging | production. Only "production" turns off test OTP codes and the API docs. */
+export function appEnv(): string {
+  return process.env.APP_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development');
+}
+
 export const appConfig = registerAs('app', () => ({
   env: process.env.NODE_ENV ?? 'development',
+  appEnv: appEnv(),
   port: Number(process.env.PORT ?? 4100),
   apiPrefix: process.env.API_PREFIX ?? 'api',
   corsOrigins: (process.env.CORS_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean),
-  isProduction: process.env.NODE_ENV === 'production',
+  isProduction: appEnv() === 'production',
 }));
 
 export const databaseConfig = registerAs('database', () => ({
@@ -42,7 +48,7 @@ export const storageConfig = registerAs('storage', () => ({
 
 function parseTestCodes(raw: string): Map<string, string> {
   const map = new Map<string, string>();
-  if (process.env.NODE_ENV === 'production') return map;
+  if (appEnv() === 'production') return map;
   for (const pair of raw.split(',')) {
     const [phone, code] = pair.split(':').map((p) => p?.trim());
     if (phone && code) map.set(phone.replace(/\D/g, ''), code);

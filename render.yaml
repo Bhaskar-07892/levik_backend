@@ -1,0 +1,49 @@
+# Render Blueprint: the hosted staging API (https://render.com/docs/blueprint-spec).
+# Render → New → Blueprint → pick this repo. Values marked `sync: false` are asked for once in the dashboard.
+services:
+  - type: web
+    name: levik-api
+    runtime: node
+    plan: free # sleeps after 15 min idle (first request then takes ~1 min); "starter" stays awake
+    region: singapore # same AWS region as the Neon database
+    branch: main
+    # Deploy only after the GitHub Actions checks on the commit pass.
+    autoDeployTrigger: checksPass
+    # Dev dependencies (Nest CLI, TypeScript) are needed to build; NODE_ENV=production would skip them.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/v1/health/live
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      # Staging keeps test OTP codes and /api/docs; set to production for a real launch.
+      - key: APP_ENV
+        value: staging
+      # Neon staging branch, DIRECT endpoint (host without "-pooler"): migrations run at boot.
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: 'true'
+      - key: DB_RUN_MIGRATIONS
+        value: 'true'
+      - key: DB_POOL_SIZE
+        value: '5'
+      # Admin portal origin(s), comma-separated, e.g. https://levik-admin.vercel.app
+      - key: CORS_ORIGINS
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      # Generated once when the service is created. Labels printed from this API are signed with it: never change it.
+      - key: QR_SIGNING_SECRET
+        generateValue: true
+      - key: QR_BASE_URL
+        value: https://levik.in/v
+      - key: OTP_TEST_CODES
+        value: 919829011234:123456,919829041127:123456,919900011122:123456
+      - key: SMS_PROVIDER
+        value: console
+      # Free instances have no persistent disk: uploads survive until the next deploy or restart.
+      - key: STORAGE_DIR
+        value: ./storage

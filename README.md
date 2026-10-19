@@ -52,6 +52,10 @@ npm run start:dev
 
 `OTP_TEST_CODES` is ignored when `NODE_ENV=production`.
 
+## Deployment
+
+The hosted staging environment (Render API, Vercel admin portal, EAS APK with over-the-air updates) and its CI/CD are described in [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Environments (Neon)
 
 The team uses three Neon projects in `ap-southeast-1` (Singapore): `levik-dev`, `levik-staging` and `levik-prod`.
@@ -60,7 +64,7 @@ The team uses three Neon projects in `ap-southeast-1` (Singapore): `levik-dev`, 
 |---|---|---|---|
 | Database | your own branch of `levik-dev` (`main` holds the shared seed) | `levik-staging` | `levik-prod` |
 | Seed / reset | `db:seed`; `db:reset` with `ALLOW_DB_RESET=true` | `db:seed` for demos | never |
-| Migrations | `npm run migration:run` | `npm run migration:run` before deploying | `npm run migration:run` after branching a backup |
+| Migrations | `npm run migration:run` | run automatically when the Render service starts | `npm run migration:run` after branching a backup |
 | Secrets | your own `.env` (git-ignored) | hosting platform | hosting platform |
 
 **Joining as a developer:**
@@ -213,7 +217,7 @@ Every physical product unit carries its own label. Scanning a label credits poin
 
 See [.env.example](.env.example). The app refuses to start if a required variable is missing or invalid. These need attention in production:
 
-- `NODE_ENV=production`: disables Swagger, test OTP codes and demo resets.
+- `NODE_ENV=production`: optimised logging and refuses demo resets. `APP_ENV` (defaults to `production` when `NODE_ENV=production`) controls Swagger and test OTP codes: both stay on with `APP_ENV=staging`.
 - `SMS_PROVIDER=msg91` with `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_ID`. The default `console` provider only logs OTPs.
 - `STORAGE_DIR`: local disk storage. Behind the `StorageDriver` interface it can be swapped for S3 or GCS.
 - `DB_RUN_MIGRATIONS=false` if migrations are run as a separate deploy step.

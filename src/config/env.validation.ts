@@ -3,6 +3,9 @@ import Joi from 'joi';
 /** Fails fast at boot when required configuration is missing or malformed. */
 export const envValidationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'test', 'production').default('development'),
+  // Deployment tier, separate from NODE_ENV so a hosted test server can run an optimised production build
+  // while keeping test OTP codes and API docs. Defaults to "production" when NODE_ENV=production.
+  APP_ENV: Joi.string().valid('development', 'staging', 'production').optional(),
   PORT: Joi.number().port().default(4100),
   API_PREFIX: Joi.string().default('api'),
   CORS_ORIGINS: Joi.string().default('http://localhost:3020'),
@@ -25,7 +28,7 @@ export const envValidationSchema = Joi.object({
 
   OTP_TTL_SECONDS: Joi.number().integer().min(60).default(300),
   OTP_MAX_ATTEMPTS: Joi.number().integer().min(1).default(5),
-  /** Comma-separated "<e164 digits>:<code>" pairs. Ignored in production. */
+  /** Comma-separated "<e164 digits>:<code>" pairs. Ignored when APP_ENV is production. */
   OTP_TEST_CODES: Joi.string().allow('').default(''),
   SMS_PROVIDER: Joi.string().valid('console', 'msg91').default('console'),
   // oxlint-disable-next-line unicorn/no-thenable -- Joi's conditional schema syntax
