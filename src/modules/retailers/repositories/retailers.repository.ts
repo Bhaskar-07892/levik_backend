@@ -88,7 +88,7 @@ export class RetailersRepository extends BaseRepository<RetailerDao> {
       .where(`r.verificationStatus = 'Approved' AND r.accountStatus = 'Active'`)
       .orderBy('r.shopName', 'ASC');
     if (filter.city) qb.andWhere('lower(r.city) = lower(:city)', { city: filter.city });
-    if (filter.search) qb.andWhere('(r.shopName ILIKE :q OR r.address ILIKE :q)', { q: likePattern(filter.search) });
+    if (filter.search) qb.andWhere('(r.shopName ILIKE :q OR r.address ILIKE :q OR r.city ILIKE :q)', { q: likePattern(filter.search) });
     const [items, total] = await qb.skip((filter.page - 1) * filter.pageSize).take(filter.pageSize).getManyAndCount();
     return { items, total, page: filter.page, pageSize: filter.pageSize };
   }
