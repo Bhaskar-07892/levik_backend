@@ -53,6 +53,8 @@ export class UpdatePlumberRequestDto extends PlumberProfileFieldsDto {
 /** Self-service edit from the app (name and mobile are fixed after KYC). */
 export class UpdateMyPlumberProfileRequestDto extends PlumberProfileFieldsDto {
   @IsOptional() @ValidateIf((_, v) => v !== null && v !== '') @IsEmail() email?: string | null;
+  /** Upload key from POST /uploads (purpose profile-photo); null removes the photo. */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(80) photoKey?: string | null;
 }
 
 export class SetPlumberVerificationRequestDto {

@@ -18,6 +18,7 @@ import type {
 import type { PlumberDao } from '../dao/plumber.dao.js';
 import { PlumberMapper } from '../mappers/plumber.mapper.js';
 import { PlumbersRepository } from '../repositories/plumbers.repository.js';
+import { UploadsService } from '../../uploads/services/uploads.service.js';
 
 @Injectable()
 export class PlumbersService {
@@ -25,6 +26,7 @@ export class PlumbersService {
     private readonly plumbers: PlumbersRepository,
     private readonly points: PointsService,
     private readonly audit: AuditService,
+    private readonly uploads: UploadsService,
   ) {}
 
   async list(query: PlumberQueryBo): Promise<Page<PlumberListItemBo>> {
@@ -63,6 +65,7 @@ export class PlumbersService {
 
   async updateProfile(actor: ActorBo, id: string, input: PlumberProfileInputBo): Promise<PlumberBo> {
     const current = await this.load(id);
+    if (input.photoKey) await this.uploads.assertOwned(input.photoKey, id, 'profile-photo');
     const patch: Partial<PlumberDao> = { ...input };
     if (input.mobile !== undefined) {
       const mobile = normalizeIndianMobile(input.mobile);

@@ -25,7 +25,12 @@ export class UploadsController {
     @Body() body: UploadRequestDto,
     @UploadedFile() file?: UploadedFileInput,
   ): Promise<UploadResponseDto> {
-    const allowed = user.role === 'admin' ? ['product-image'] : user.role === 'plumber' ? ['scan-photo'] : ['invoice-document'];
+    const allowed =
+      user.role === 'admin'
+        ? ['product-image']
+        : user.role === 'plumber'
+          ? ['scan-photo', 'profile-photo']
+          : ['invoice-document', 'profile-photo', 'shop-photo'];
     if (!allowed.includes(body.purpose)) {
       throw AppException.rule(ErrorCode.FORBIDDEN, `Your account cannot upload ${body.purpose} files.`);
     }

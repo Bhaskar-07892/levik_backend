@@ -11,6 +11,8 @@ interface OtpSettings {
   otpTtlSeconds: number;
   otpMaxAttempts: number;
   otpTestCodes: Map<string, string>;
+  /** TEST_OTP: accepted for every number when set (never in production). */
+  otpTestCodeForAll?: string;
 }
 
 const RESEND_COOLDOWN_MS = 30_000;
@@ -38,7 +40,7 @@ export class OtpService {
     if (stats.count >= MAX_PER_HOUR) {
       throw new AppException(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.LIMIT_REACHED, 'Too many OTP requests. Try again in an hour.');
     }
-    const testCode = this.settings.otpTestCodes.get(phoneDigits);
+    const testCode = this.settings.otpTestCodes.get(phoneDigits) ?? this.settings.otpTestCodeForAll;
     const code = testCode ?? String(randomInt(0, 1_000_000)).padStart(6, '0');
     await this.challenges.create({
       phone: phoneDigits,

@@ -20,6 +20,7 @@ import type {
 import type { RetailerDao } from '../dao/retailer.dao.js';
 import { RetailerMapper } from '../mappers/retailer.mapper.js';
 import { RetailersRepository } from '../repositories/retailers.repository.js';
+import { UploadsService } from '../../uploads/services/uploads.service.js';
 
 @Injectable()
 export class RetailersService {
@@ -28,6 +29,7 @@ export class RetailersService {
     private readonly points: PointsService,
     private readonly tx: TransactionService,
     private readonly audit: AuditService,
+    private readonly uploads: UploadsService,
   ) {}
 
   async list(query: RetailerQueryBo): Promise<Page<RetailerListItemBo>> {
@@ -70,6 +72,8 @@ export class RetailersService {
 
   async updateProfile(actor: ActorBo, id: string, input: RetailerProfileInputBo): Promise<RetailerBo> {
     const current = await this.load(id);
+    if (input.photoKey) await this.uploads.assertOwned(input.photoKey, id, 'profile-photo');
+    if (input.shopPhotoKey) await this.uploads.assertOwned(input.shopPhotoKey, id, 'shop-photo');
     const patch: Partial<RetailerDao> = { ...input };
     if (input.mobile !== undefined) {
       const mobile = normalizeIndianMobile(input.mobile);

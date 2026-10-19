@@ -1,3 +1,4 @@
+import { fileUrl } from '../../uploads/file-url.js';
 import type { DealerProductBo, DealerRowBo, DealerStockBo, DealerSummaryBo, ExploreProductBo } from '../bo/explore.bo.js';
 import type {
   ExploreDealerDto,
@@ -29,7 +30,16 @@ export const ExploreMapper = {
   },
 
   dealer(bo: DealerRowBo): ExploreDealerDto {
-    return { id: bo.id, shopName: bo.shopName, address: bo.address, city: bo.city, state: bo.state, mobile: bo.mobile, sameCity: bo.sameCity };
+    return {
+      id: bo.id,
+      shopName: bo.shopName,
+      address: bo.address,
+      city: bo.city,
+      state: bo.state,
+      mobile: bo.mobile,
+      shopPhotoUrl: fileUrl(bo.shopPhotoKey),
+      sameCity: bo.sameCity,
+    };
   },
 
   dealerStock(bo: DealerStockBo): ExploreDealerStockDto {

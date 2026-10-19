@@ -54,6 +54,14 @@ export class RetailerDao {
   @Column('text', { name: 'rejection_reason', nullable: true })
   rejectionReason: string | null;
 
+  /** Upload key (image ID) of the owner's profile photo. */
+  @Column('text', { name: 'photo_key', nullable: true })
+  photoKey: string | null;
+
+  /** Upload key (image ID) of the shop front photo. */
+  @Column('text', { name: 'shop_photo_key', nullable: true })
+  shopPhotoKey: string | null;
+
   @Column('timestamptz', { name: 'last_login_at', nullable: true })
   lastLoginAt: Date | null;
 }

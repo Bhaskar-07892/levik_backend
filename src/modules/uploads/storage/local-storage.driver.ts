@@ -3,7 +3,7 @@ import { createReadStream } from 'node:fs';
 import { access, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import type { Readable } from 'node:stream';
-import type { StorageDriver } from './storage-driver.interface.js';
+import { objectPath, UPLOAD_KEY_PATTERN, type StorageDriver } from './storage-driver.interface.js';
 
 /** Stores objects under STORAGE_DIR. Keys are generated server-side and never contain path separators. */
 export class LocalStorageDriver implements StorageDriver {
@@ -30,8 +30,7 @@ export class LocalStorageDriver implements StorageDriver {
   }
 
   private pathFor(key: string): string {
-    if (!/^[a-z-]+_[0-9a-f-]{36}\.[a-z]+$/.test(key)) throw new NotFoundException('File not found');
-    const [folder] = key.split('_');
-    return join(this.root, folder, key);
+    if (!UPLOAD_KEY_PATTERN.test(key)) throw new NotFoundException('File not found');
+    return join(this.root, objectPath(key));
   }
 }

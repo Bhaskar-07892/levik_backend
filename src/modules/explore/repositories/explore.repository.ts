@@ -61,7 +61,7 @@ export class ExploreRepository {
   /** Dealers with the product in stock: caller's city first, then most stock. */
   dealersForProduct(productId: string, city: string | null, limit = 50): Promise<Array<DealerRowBo & { quantity: number; updatedAt: Date }>> {
     return this.dataSource.query(
-      `select r.id, r.shop_name as "shopName", r.address, r.city, r.state, r.mobile,
+      `select r.id, r.shop_name as "shopName", r.address, r.city, r.state, r.mobile, r.shop_photo_key as "shopPhotoKey",
               coalesce(lower(r.city) = lower($2), false) as "sameCity", i.quantity, i.updated_at as "updatedAt"
          from inventory i join retailers r on r.id = i.retailer_id
         where i.product_id = $1 and i.quantity > 0 and ${LISTED_DEALER}
@@ -74,7 +74,7 @@ export class ExploreRepository {
   /** Listed dealers with the number of products in stock: caller's city first. */
   dealers(search: string | undefined, city: string | null, limit = 50): Promise<DealerSummaryBo[]> {
     return this.dataSource.query(
-      `select r.id, r.shop_name as "shopName", r.address, r.city, r.state, r.mobile,
+      `select r.id, r.shop_name as "shopName", r.address, r.city, r.state, r.mobile, r.shop_photo_key as "shopPhotoKey",
               coalesce(lower(r.city) = lower($2), false) as "sameCity",
               count(i.id) filter (where i.quantity > 0)::int as "productsInStock"
          from retailers r left join inventory i on i.retailer_id = r.id
@@ -88,7 +88,7 @@ export class ExploreRepository {
 
   async dealer(id: string, city: string | null): Promise<DealerRowBo | undefined> {
     const rows: DealerRowBo[] = await this.dataSource.query(
-      `select r.id, r.shop_name as "shopName", r.address, r.city, r.state, r.mobile,
+      `select r.id, r.shop_name as "shopName", r.address, r.city, r.state, r.mobile, r.shop_photo_key as "shopPhotoKey",
               coalesce(lower(r.city) = lower($2), false) as "sameCity"
          from retailers r where r.id = $1 and ${LISTED_DEALER}`,
       [id, city],

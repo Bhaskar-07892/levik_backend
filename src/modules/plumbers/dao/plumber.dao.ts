@@ -58,6 +58,10 @@ export class PlumberDao {
   @Column('text', { name: 'verification_note', nullable: true })
   verificationNote: string | null;
 
+  /** Upload key (image ID) of the profile photo. */
+  @Column('text', { name: 'photo_key', nullable: true })
+  photoKey: string | null;
+
   @Column('timestamptz', { name: 'last_login_at', nullable: true })
   lastLoginAt: Date | null;
 }

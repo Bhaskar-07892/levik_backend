@@ -274,6 +274,59 @@ describe('Levik API (e2e)', () => {
     });
   });
 
+  describe('photos and signed file links', () => {
+    // 1×1 transparent PNG.
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+    const token = async (sub: string, role: 'plumber' | 'retailer', phone: string) =>
+      `Bearer ${(await app.get(TokenService).issue({ sub, role, phone })).accessToken}`;
+
+    it('uploads a shop photo, attaches it and serves it through a signed link', async () => {
+      const retailer = await token('RTL-2001', 'retailer', '919829041127');
+      const upload = await http.post(api('/uploads')).set('authorization', retailer).field('purpose', 'shop-photo').attach('file', png, 'shop.png');
+      expect(upload.status).toBe(201);
+      expect(upload.body.url).toMatch(/^\/api\/v1\/files\/shop-photo_[0-9a-f-]{36}\.png\?exp=\d+&sig=[\w-]{32}$/);
+
+      const me = await http.patch(api('/app/retailers/me')).set('authorization', retailer).send({ shopPhotoKey: upload.body.key });
+      expect(me.status).toBe(200);
+      expect(me.body.shopPhotoUrl).toMatch(/^\/api\/v1\/files\/shop-photo_/);
+      expect(me.body).not.toHaveProperty('shopPhotoKey');
+
+      const stores = await http.get(api('/app/stores')).query({ search: 'Sharma' }).set('authorization', retailer);
+      expect(stores.body.items.find((s: { id: string }) => s.id === 'RTL-2001').shopPhotoUrl).toBeDefined();
+
+      // No auth header: <Image> and <img> load the link directly, from other origins.
+      const file = await http.get(me.body.shopPhotoUrl);
+      expect(file.status).toBe(200);
+      expect(file.headers['content-type']).toBe('image/png');
+      expect(file.headers['cross-origin-resource-policy']).toBe('cross-origin');
+      expect(Buffer.compare(file.body as Buffer, png)).toBe(0);
+
+      const tampered = (me.body.shopPhotoUrl as string).replace(/sig=(.)/, (_, c: string) => `sig=${c === 'A' ? 'B' : 'A'}`);
+      expect((await http.get(tampered)).status).toBe(404);
+    });
+
+    it('sets a plumber profile photo and refuses uploads that are not theirs or of the wrong kind', async () => {
+      const plumber = await token('PLM-1001', 'plumber', '919829011234');
+      const own = await http.post(api('/uploads')).set('authorization', plumber).field('purpose', 'profile-photo').attach('file', png, 'me.png');
+      expect(own.status).toBe(201);
+      const me = await http.patch(api('/app/plumbers/me')).set('authorization', plumber).send({ photoKey: own.body.key });
+      expect(me.status).toBe(200);
+      expect(me.body.photoUrl).toMatch(/^\/api\/v1\/files\/profile-photo_/);
+
+      const retailer = await token('RTL-2001', 'retailer', '919829041127');
+      const theirs = await http.post(api('/uploads')).set('authorization', retailer).field('purpose', 'profile-photo').attach('file', png, 'them.png');
+      expect((await http.patch(api('/app/plumbers/me')).set('authorization', plumber).send({ photoKey: theirs.body.key })).status).toBe(422);
+
+      const sitePhoto = await http.post(api('/uploads')).set('authorization', plumber).field('purpose', 'scan-photo').attach('file', png, 'site.png');
+      expect((await http.patch(api('/app/plumbers/me')).set('authorization', plumber).send({ photoKey: sitePhoto.body.key })).status).toBe(422);
+
+      expect((await http.post(api('/uploads')).set('authorization', plumber).field('purpose', 'shop-photo').attach('file', png, 'x.png')).status).toBe(422);
+
+      const cleared = await http.patch(api('/app/plumbers/me')).set('authorization', plumber).send({ photoKey: null });
+      expect(cleared.body.photoUrl).toBeUndefined();
+    });
+  });
+
   describe('admin read models', () => {
     it.each([
       '/admin/dashboard?period=30d',

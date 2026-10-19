@@ -17,6 +17,9 @@ export interface RetailerBo {
   accountStatus: RetailerAccountStatus;
   monthlyTarget: number;
   rejectionReason: string | null;
+  /** Upload keys (image IDs) of the owner's profile photo and the shop front photo. */
+  photoKey: string | null;
+  shopPhotoKey: string | null;
   lastLoginAt: Date | null;
 }
 
@@ -57,6 +60,8 @@ export interface RetailerProfileInputBo {
   gstin?: string | null;
   distributor?: string;
   monthlyTarget?: number;
+  photoKey?: string | null;
+  shopPhotoKey?: string | null;
 }
 
 export interface RegisterRetailerBo {
@@ -76,4 +81,5 @@ export interface StoreBo {
   city: string;
   state: string;
   mobile: string;
+  shopPhotoKey: string | null;
 }

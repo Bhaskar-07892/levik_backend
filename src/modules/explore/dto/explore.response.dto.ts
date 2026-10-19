@@ -50,6 +50,8 @@ export class ExploreDealerDto {
   city: string;
   state: string;
   mobile: string;
+  /** Signed link to the shop front photo, relative to the API origin. */
+  shopPhotoUrl?: string;
   /** Dealer is in the caller's city ("nearby"). */
   sameCity: boolean;
 }

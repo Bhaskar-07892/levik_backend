@@ -17,6 +17,8 @@ export interface PlumberBo {
   specialization: string;
   preferredRetailer: { id: string; shopName: string } | null;
   verificationNote: string | null;
+  /** Upload key (image ID) of the profile photo. */
+  photoKey: string | null;
   lastLoginAt: Date | null;
 }
 
@@ -51,6 +53,7 @@ export interface PlumberProfileInputBo {
   experienceYears?: number;
   specialization?: string;
   preferredRetailerId?: string | null;
+  photoKey?: string | null;
 }
 
 export interface RegisterPlumberBo {

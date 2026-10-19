@@ -1,3 +1,4 @@
+import { fileUrl } from '../../uploads/file-url.js';
 import { AuditMapper } from '../../audit/mappers/audit.mapper.js';
 import { SchemeMapper } from '../../schemes/mappers/scheme.mapper.js';
 import type { ScanBo, ScanReviewBo } from '../bo/scan.bo.js';
@@ -55,6 +56,7 @@ export const ScanMapper = {
     scannedAt: b.scannedAt.toISOString(),
     invoiceNumber: b.invoiceNumber ?? undefined,
     photoKey: b.photoKey ?? undefined,
+    photoUrl: fileUrl(b.photoKey),
     awardedPoints: b.awardedPoints ?? undefined,
     ledgerTxnId: b.ledgerTxnId ?? undefined,
     rejectionReason: b.rejectionReason ?? undefined,

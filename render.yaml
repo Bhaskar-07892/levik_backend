@@ -42,8 +42,13 @@ services:
         value: https://levik.in/v
       - key: OTP_TEST_CODES
         value: 919829011234:123456,919829041127:123456,919900011122:123456
+      # 123456 signs in ANY number on staging (no SMS). Ignored when APP_ENV=production.
+      - key: TEST_OTP
+        value: '123456'
       - key: SMS_PROVIDER
         value: console
-      # Free instances have no persistent disk: uploads survive until the next deploy or restart.
+      # Uploads: local disk until a bucket is set up. Free instances have no persistent disk, so local uploads
+      # vanish on every deploy. To use a bucket, add STORAGE_DRIVER=s3 and the S3_* values in the Render
+      # dashboard (DEPLOYMENT.md → File storage); they are secrets, so they are not kept in this file.
       - key: STORAGE_DIR
         value: ./storage

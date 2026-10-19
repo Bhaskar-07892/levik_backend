@@ -46,6 +46,8 @@ export class ScanResponseDto {
   invoiceNumber?: string;
   siteLocation: string;
   photoKey?: string;
+  /** Signed link to the installation photo, relative to the API origin. */
+  photoUrl?: string;
   @ApiProperty({ enum: SCAN_STATUSES })
   status: ScanStatus;
   expectedPoints: number;

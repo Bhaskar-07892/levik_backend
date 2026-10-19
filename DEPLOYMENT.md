@@ -46,7 +46,7 @@ Keep the URL out of chat, commits and screenshots. It goes only into Render (ste
 
 **Free plan limits:**
 - The service sleeps after 15 minutes without requests. The next request takes about a minute while it wakes up. Upgrade the service to **Starter** in Render to keep it awake.
-- There is no persistent disk. Uploaded invoices and installation photos are lost on each deploy or restart. That is fine for testing, but real use needs object storage (S3 or Cloudflare R2 behind `StorageDriver`).
+- There is no persistent disk. Until you set up a bucket (step 5), uploaded photos and invoices are lost on each deploy or restart.
 
 ## 3. Admin portal: Vercel
 
@@ -68,7 +68,7 @@ Run these in `levik-mobile`. You need a free [Expo account](https://expo.dev/sig
 npx eas-cli@latest login
 npx eas-cli@latest init
 npx eas-cli@latest update:configure
-npx eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_API_URL --value https://<service>.onrender.com --visibility plaintext
+npx eas-cli@latest env:set --environment preview --name EXPO_PUBLIC_API_URL --value https://<service>.onrender.com --visibility plaintext
 npx eas-cli@latest build --platform android --profile preview
 ```
 
@@ -82,14 +82,42 @@ npx eas-cli@latest build --platform android --profile preview
 
 **One-time GitHub setup for updates:** create an access token at expo.dev → Account settings → **Access tokens**, then add it to the `levik-mobile` repository on GitHub as an Actions secret named `EXPO_TOKEN` (**Settings → Secrets and variables → Actions**).
 
+## 5. File storage: Cloudflare R2
+
+Profile photos, shop photos, installation (site) photos, invoice documents and product images go to a private **Cloudflare R2** bucket. The free tier covers this project comfortably: 10 GB stored, 1 million uploads and 10 million reads a month, and **no download (egress) fees**. Cloudflare asks for a card to turn R2 on, but nothing is charged within the free tier.
+
+**How it works:** the `uploads` table keeps one row per file. Its `key`, such as `shop-photo_<uuid>.jpg`, is the image ID. Profiles, scans and invoices store only that ID. API responses include a signed link for it (`photoUrl`, `shopPhotoUrl`, `documentUrl`) that works for one to two days. Opening the link makes the API check the signature and redirect to a one-hour presigned R2 URL, so the bucket stays private and file bytes never pass through Render.
+
+1. Cloudflare dashboard → **R2 Object Storage** → enable R2 (adds the free plan).
+2. **Create bucket**: name `levik-staging-uploads`, location *Automatic* (or the Asia-Pacific hint). Leave public access **off**.
+3. **R2 → Manage API tokens → Create API token**: permission **Object Read & Write**, applied to that bucket only. Copy the **Access Key ID**, the **Secret Access Key** and the **S3 endpoint** (`https://<account id>.r2.cloudflarestorage.com`). The secret is shown once.
+4. In Render → levik-api → **Environment**, add the following, then save (the API redeploys):
+
+   | Key | Value |
+   | --- | --- |
+   | `STORAGE_DRIVER` | `s3` |
+   | `S3_ENDPOINT` | `https://<account id>.r2.cloudflarestorage.com` |
+   | `S3_REGION` | `auto` |
+   | `S3_BUCKET` | `levik-staging-uploads` |
+   | `S3_ACCESS_KEY_ID` | from step 3 |
+   | `S3_SECRET_ACCESS_KEY` | from step 3 |
+
+5. Upload a shop or profile photo from the app and check that it shows. The file appears in the bucket under a folder named after its purpose (`shop-photo/`, `profile-photo/`, `scan-photo/`…).
+
+Use a separate bucket and token for production. Keep the keys only in Render, never in chat or git.
+
+**Without a card:** Backblaze B2 also gives 10 GB free and speaks the same S3 API. Create a private bucket and an application key for it, then set `S3_ENDPOINT=https://s3.<region>.backblazeb2.com` and `S3_REGION=<region>` (for example `us-west-004`). B2 limits free downloads, which is fine for testing; check its current pricing page.
+
 ## Test accounts on staging
 
-Staging runs with `APP_ENV=staging`. That keeps the test OTP `123456` for the seeded numbers (`98290 11234` plumber, `98290 41127` retailer, `99000 11122` new user) and the API docs at `/api/docs`. No real SMS is sent.
+Staging runs with `APP_ENV=staging` and `TEST_OTP=123456`: **any** mobile number signs in with OTP `123456`, and no SMS is sent. The seeded accounts are `98290 11234` (plumber) and `98290 41127` (retailer). Any other number goes through role selection and registration as a new user. The API docs are at `/api/docs`.
+
+To turn the shared code off, delete `TEST_OTP` in Render → levik-api → **Environment**. The per-number codes in `OTP_TEST_CODES` keep working.
 
 ## Going to production later
 
 Repeat the steps with a `levik-prod` Neon project, a second Render service and Vercel production domain, and an EAS `production` build. In production:
 - Set `APP_ENV=production`. That turns off test OTPs and the docs.
 - Set `SMS_PROVIDER=msg91` with its keys.
-- Use object storage for uploads.
+- Use a production bucket and token for uploads (step 5).
 - Use a paid Render instance.

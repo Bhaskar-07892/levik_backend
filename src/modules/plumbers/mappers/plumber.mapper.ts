@@ -1,3 +1,4 @@
+import { fileUrl } from '../../uploads/file-url.js';
 import type { PlumberBo, PlumberDetailBo, PlumberListItemBo } from '../bo/plumber.bo.js';
 import type { PlumberDao } from '../dao/plumber.dao.js';
 import type { PlumberDetailResponseDto, PlumberListItemResponseDto, PlumberResponseDto } from '../dto/plumber.response.dto.js';
@@ -19,10 +20,12 @@ export const PlumberMapper = {
     specialization: d.specialization,
     preferredRetailer: d.preferredRetailer ? { id: d.preferredRetailer.id, shopName: d.preferredRetailer.shopName } : null,
     verificationNote: d.verificationNote,
+    photoKey: d.photoKey,
     lastLoginAt: d.lastLoginAt,
   }),
-  toDto: (b: PlumberBo): PlumberResponseDto => ({
+  toDto: ({ photoKey, ...b }: PlumberBo): PlumberResponseDto => ({
     ...b,
+    photoUrl: fileUrl(photoKey),
     email: b.email ?? undefined,
     aadhaarMasked: b.aadhaarMasked ?? undefined,
     preferredRetailer: b.preferredRetailer ?? undefined,

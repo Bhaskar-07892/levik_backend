@@ -14,6 +14,8 @@ export class InvoiceListItemResponseDto {
   invoiceDate: string;
   submittedAt: string;
   documentKey?: string;
+  /** Signed link to the invoice document, relative to the API origin. */
+  documentUrl?: string;
   @ApiProperty({ enum: INVOICE_STATUSES })
   status: InvoiceStatus;
   reviewer?: string;

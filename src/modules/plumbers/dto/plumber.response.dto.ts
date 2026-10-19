@@ -26,6 +26,8 @@ export class PlumberResponseDto {
   @ApiProperty({ enum: ACCOUNT_STATUSES })
   accountStatus: AccountStatus;
   aadhaarMasked?: string;
+  /** Signed link to the profile photo, relative to the API origin. */
+  photoUrl?: string;
   experienceYears: number;
   specialization: string;
   preferredRetailer?: RetailerRefDto;

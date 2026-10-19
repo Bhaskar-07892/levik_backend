@@ -47,6 +47,8 @@ export interface DealerRowBo {
   city: string;
   state: string;
   mobile: string;
+  /** Upload key (image ID) of the shop front photo. */
+  shopPhotoKey: string | null;
   sameCity: boolean;
 }
 

@@ -25,6 +25,9 @@ export class RetailerResponseDto {
   accountStatus: RetailerAccountStatus;
   monthlyTarget: number;
   rejectionReason?: string;
+  /** Signed links to the owner's profile photo and the shop front photo, relative to the API origin. */
+  photoUrl?: string;
+  shopPhotoUrl?: string;
   lastLoginAt?: string;
 }
 
@@ -54,6 +57,8 @@ export class StoreResponseDto {
   city: string;
   state: string;
   mobile: string;
+  /** Signed link to the shop front photo, relative to the API origin. */
+  shopPhotoUrl?: string;
 }
 
 export class StorePageResponseDto {

@@ -1,3 +1,4 @@
+import { fileUrl } from '../../uploads/file-url.js';
 import type { RetailerBo, RetailerDetailBo, RetailerListItemBo, StoreBo } from '../bo/retailer.bo.js';
 import type { RetailerDao } from '../dao/retailer.dao.js';
 import type {
@@ -24,12 +25,16 @@ export const RetailerMapper = {
     accountStatus: d.accountStatus === 'Inactive' ? 'Suspended' : d.accountStatus,
     monthlyTarget: d.monthlyTarget,
     rejectionReason: d.rejectionReason,
+    photoKey: d.photoKey,
+    shopPhotoKey: d.shopPhotoKey,
     lastLoginAt: d.lastLoginAt,
   }),
-  toStoreBo: (d: RetailerDao): StoreBo => ({ id: d.id, shopName: d.shopName, address: d.address, city: d.city, state: d.state, mobile: d.mobile }),
+  toStoreBo: (d: RetailerDao): StoreBo => ({ id: d.id, shopName: d.shopName, address: d.address, city: d.city, state: d.state, mobile: d.mobile, shopPhotoKey: d.shopPhotoKey }),
   achievement: (sales: number, target: number) => (target > 0 ? Math.round((sales / target) * 100) : 0),
-  toDto: (b: RetailerBo): RetailerResponseDto => ({
+  toDto: ({ photoKey, shopPhotoKey, ...b }: RetailerBo): RetailerResponseDto => ({
     ...b,
+    photoUrl: fileUrl(photoKey),
+    shopPhotoUrl: fileUrl(shopPhotoKey),
     email: b.email ?? undefined,
     gstin: b.gstin ?? undefined,
     rejectionReason: b.rejectionReason ?? undefined,
@@ -48,5 +53,5 @@ export const RetailerMapper = {
     achievementPct: b.achievementPct,
     points: b.points,
   }),
-  storeToDto: (b: StoreBo): StoreResponseDto => ({ ...b }),
+  storeToDto: ({ shopPhotoKey, ...b }: StoreBo): StoreResponseDto => ({ ...b, shopPhotoUrl: fileUrl(shopPhotoKey) }),
 };

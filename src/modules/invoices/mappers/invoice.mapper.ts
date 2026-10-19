@@ -1,3 +1,4 @@
+import { fileUrl } from '../../uploads/file-url.js';
 import type { CheckBo } from '../../../common/bo/check.bo.js';
 import { AuditMapper } from '../../audit/mappers/audit.mapper.js';
 import { SchemeMapper } from '../../schemes/mappers/scheme.mapper.js';
@@ -44,6 +45,7 @@ export const InvoiceMapper = {
     submittedAt: b.submittedAt.toISOString(),
     reviewedAt: b.reviewedAt?.toISOString(),
     documentKey: b.documentKey ?? undefined,
+    documentUrl: fileUrl(b.documentKey),
     reviewer: b.reviewer ?? undefined,
     incentivePoints: b.incentivePoints ?? undefined,
     ledgerTxnId: b.ledgerTxnId ?? undefined,

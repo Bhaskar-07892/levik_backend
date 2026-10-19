@@ -31,6 +31,7 @@ export const authConfig = registerAs('auth', () => ({
   otpTtlSeconds: Number(process.env.OTP_TTL_SECONDS ?? 300),
   otpMaxAttempts: Number(process.env.OTP_MAX_ATTEMPTS ?? 5),
   otpTestCodes: parseTestCodes(process.env.OTP_TEST_CODES ?? ''),
+  otpTestCodeForAll: appEnv() === 'production' ? undefined : process.env.TEST_OTP || undefined,
   smsProvider: (process.env.SMS_PROVIDER ?? 'console') as 'console' | 'msg91',
   msg91AuthKey: process.env.MSG91_AUTH_KEY,
   msg91TemplateId: process.env.MSG91_TEMPLATE_ID,
@@ -42,7 +43,16 @@ export const labelsConfig = registerAs('labels', () => ({
 }));
 
 export const storageConfig = registerAs('storage', () => ({
+  driver: (process.env.STORAGE_DRIVER ?? 'local') as 'local' | 's3',
   dir: process.env.STORAGE_DIR ?? './storage',
+  s3: {
+    endpoint: process.env.S3_ENDPOINT || undefined,
+    region: process.env.S3_REGION || 'auto',
+    bucket: process.env.S3_BUCKET ?? '',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
+    forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
+  },
   maxBytes: Number(process.env.UPLOAD_MAX_MB ?? 10) * 1024 * 1024,
 }));
 

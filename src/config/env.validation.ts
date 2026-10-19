@@ -30,6 +30,8 @@ export const envValidationSchema = Joi.object({
   OTP_MAX_ATTEMPTS: Joi.number().integer().min(1).default(5),
   /** Comma-separated "<e164 digits>:<code>" pairs. Ignored when APP_ENV is production. */
   OTP_TEST_CODES: Joi.string().allow('').default(''),
+  /** One 6-digit code accepted for EVERY number (no SMS is sent). For test environments; ignored when APP_ENV is production. */
+  TEST_OTP: Joi.string().pattern(/^\d{6}$/).allow('').optional(),
   SMS_PROVIDER: Joi.string().valid('console', 'msg91').default('console'),
   // oxlint-disable-next-line unicorn/no-thenable -- Joi's conditional schema syntax
   MSG91_AUTH_KEY: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required(), otherwise: Joi.optional() }),
@@ -39,7 +41,20 @@ export const envValidationSchema = Joi.object({
   QR_SIGNING_SECRET: Joi.string().min(32).required(),
   QR_BASE_URL: Joi.string().uri().default('https://levik.in/v'),
 
+  // local = files under STORAGE_DIR (development). s3 = an S3-compatible bucket (Cloudflare R2, Backblaze B2, AWS S3…).
+  STORAGE_DRIVER: Joi.string().valid('local', 's3').default('local'),
   STORAGE_DIR: Joi.string().default('./storage'),
+  /** R2: https://<account id>.r2.cloudflarestorage.com · B2: https://s3.<region>.backblazeb2.com. Omit for AWS. */
+  S3_ENDPOINT: Joi.string().uri().optional(),
+  /** "auto" for R2. */
+  S3_REGION: Joi.string().default('auto'),
+  // oxlint-disable-next-line unicorn/no-thenable -- Joi's conditional schema syntax
+  S3_BUCKET: Joi.string().when('STORAGE_DRIVER', { is: 's3', then: Joi.required(), otherwise: Joi.optional() }),
+  // oxlint-disable-next-line unicorn/no-thenable -- Joi's conditional schema syntax
+  S3_ACCESS_KEY_ID: Joi.string().when('STORAGE_DRIVER', { is: 's3', then: Joi.required(), otherwise: Joi.optional() }),
+  // oxlint-disable-next-line unicorn/no-thenable -- Joi's conditional schema syntax
+  S3_SECRET_ACCESS_KEY: Joi.string().when('STORAGE_DRIVER', { is: 's3', then: Joi.required(), otherwise: Joi.optional() }),
+  S3_FORCE_PATH_STYLE: Joi.boolean().default(false),
   UPLOAD_MAX_MB: Joi.number().min(1).max(50).default(10),
 })
   // The process environment contains many unrelated variables; report every problem at once.

@@ -103,7 +103,7 @@ export type AuditEntity = (typeof AUDIT_ENTITIES)[number];
 export const PRODUCT_UNIT_STATUSES = ['Available', 'Claimed', 'Void'] as const;
 export type ProductUnitStatus = (typeof PRODUCT_UNIT_STATUSES)[number];
 
-export const UPLOAD_PURPOSES = ['scan-photo', 'invoice-document', 'product-image'] as const;
+export const UPLOAD_PURPOSES = ['scan-photo', 'invoice-document', 'product-image', 'profile-photo', 'shop-photo'] as const;
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
 
 export const STOCK_STATUSES = ['In Stock', 'Low Stock', 'Out of Stock'] as const;
