@@ -39,6 +39,15 @@ export const envValidationSchema = Joi.object({
   MSG91_TEMPLATE_ID: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required(), otherwise: Joi.optional() }),
 
   QR_SIGNING_SECRET: Joi.string().min(32).required(),
+  /**
+   * Comma-separated secrets that printed labels may still be signed with: after a rotation, or when two APIs
+   * that share a database were given different secrets. Verification only; new labels use QR_SIGNING_SECRET.
+   */
+  QR_SIGNING_SECRETS_PREVIOUS: Joi.string()
+    .allow('')
+    .pattern(/^[^,]{32,}(,[^,]{32,})*$/)
+    .message('QR_SIGNING_SECRETS_PREVIOUS must be comma-separated secrets of at least 32 characters each')
+    .optional(),
   QR_BASE_URL: Joi.string().uri().default('https://levik.in/v'),
 
   // local = files under STORAGE_DIR (development). s3 = an S3-compatible bucket (Cloudflare R2, Backblaze B2, AWS S3…).

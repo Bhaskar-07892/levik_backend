@@ -2,8 +2,8 @@ import { ConfigService } from '@nestjs/config';
 import { generateSerial } from '../utils/serial-code.js';
 import { QrSignerService } from './qr-signer.service.js';
 
-const signer = (secret = 'unit-test-secret-unit-test-secret-1234') =>
-  new QrSignerService(new ConfigService({ labels: { signingSecret: secret, baseUrl: 'https://levik.in/v' } }));
+const signer = (secret = 'unit-test-secret-unit-test-secret-1234', previousSecrets: string[] = []) =>
+  new QrSignerService(new ConfigService({ labels: { signingSecret: secret, previousSecrets, baseUrl: 'https://levik.in/v' } }));
 
 describe('QrSignerService', () => {
   const qr = signer();
@@ -27,6 +27,16 @@ describe('QrSignerService', () => {
 
   it('accepts a typed serial without a signature', () => {
     expect(qr.parse(serial.toLowerCase())).toEqual({ serial, signature: undefined });
+  });
+
+  it('accepts labels signed with a previous secret and signs new ones with the current secret', () => {
+    const old = signer('the-old-secret-the-old-secret-0123456789');
+    const rotated = signer('the-new-secret-the-new-secret-0123456789', ['the-old-secret-the-old-secret-0123456789']);
+    const printed = old.sign(serial);
+    expect(rotated.verify(serial, printed)).toBe(true);
+    expect(rotated.sign(serial)).not.toBe(printed);
+    expect(old.verify(serial, rotated.sign(serial))).toBe(false);
+    expect(rotated.verify(serial, signer('an-unknown-secret-an-unknown-secret-01').sign(serial))).toBe(false);
   });
 
   it('keeps legacy serials and rejects junk', () => {

@@ -39,6 +39,10 @@ export const authConfig = registerAs('auth', () => ({
 
 export const labelsConfig = registerAs('labels', () => ({
   signingSecret: process.env.QR_SIGNING_SECRET as string,
+  previousSecrets: (process.env.QR_SIGNING_SECRETS_PREVIOUS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
   baseUrl: (process.env.QR_BASE_URL ?? 'https://levik.in/v').replace(/\/+$/, ''),
 }));
 

@@ -5,6 +5,8 @@ import { canonicalSerial } from '../utils/serial-code.js';
 
 interface LabelSettings {
   signingSecret: string;
+  /** Older secrets still accepted when verifying printed labels (QR_SIGNING_SECRETS_PREVIOUS). */
+  previousSecrets?: string[];
   baseUrl: string;
 }
 
@@ -29,18 +31,21 @@ export class QrSignerService {
     this.settings = config.getOrThrow<LabelSettings>('labels');
   }
 
-  sign(serial: string): string {
-    return createHmac('sha256', this.settings.signingSecret).update(serial).digest('base64url').slice(0, SIGNATURE_LENGTH);
+  sign(serial: string, secret = this.settings.signingSecret): string {
+    return createHmac('sha256', secret).update(serial).digest('base64url').slice(0, SIGNATURE_LENGTH);
   }
 
   payload(serial: string): string {
     return `${this.settings.baseUrl}/${encodeURIComponent(serial)}?k=${this.sign(serial)}`;
   }
 
+  /** True when the signature matches the current secret or one of the previous ones. */
   verify(serial: string, signature: string): boolean {
-    const expected = Buffer.from(this.sign(serial));
     const actual = Buffer.from(signature);
-    return expected.length === actual.length && timingSafeEqual(expected, actual);
+    return [this.settings.signingSecret, ...(this.settings.previousSecrets ?? [])].some((secret) => {
+      const expected = Buffer.from(this.sign(serial, secret));
+      return expected.length === actual.length && timingSafeEqual(expected, actual);
+    });
   }
 
   /** Accepts a scanned QR payload (URL) or a typed serial. */
