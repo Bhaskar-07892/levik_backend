@@ -7,6 +7,7 @@ import { ProductsService } from '../../products/services/products.service.js';
 import { ResolveLabelQueryDto } from '../dto/label.request.dto.js';
 import { LabelVerificationResponseDto, ResolvedLabelResponseDto } from '../dto/label.response.dto.js';
 import { LabelsService } from '../services/labels.service.js';
+import { imageLink } from '../../uploads/file-url.js';
 
 @ApiTags('App · QR labels')
 @ApiBearerAuth()
@@ -31,7 +32,7 @@ export class AppLabelsController {
       productId: product.id,
       productName: product.name,
       modelCode: product.modelCode,
-      imageUrl: product.imageUrl ?? undefined,
+      imageUrl: imageLink(product.imageUrl),
       scanPoints: product.rewardEligible ? product.plumberPoints : 0,
     };
   }

@@ -42,7 +42,7 @@ export class CreateProductRequestDto {
   features?: string[];
 
   @IsOptional() @IsString() @MaxLength(500)
-  @IsUrl({ require_tld: false, require_protocol: false, allow_underscores: true }, { message: 'imageUrl must be a URL or path' })
+  @IsUrl({ require_tld: false, require_protocol: false, allow_underscores: true }, { message: 'imageUrl must be a URL, a path or an uploaded product-image key' })
   imageUrl?: string;
 
   @Transform(trim) @IsString() @MinLength(3) @MaxLength(40)

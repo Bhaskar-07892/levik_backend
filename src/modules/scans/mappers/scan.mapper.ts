@@ -4,6 +4,7 @@ import { SchemeMapper } from '../../schemes/mappers/scheme.mapper.js';
 import type { ScanBo, ScanReviewBo } from '../bo/scan.bo.js';
 import type { ScanDao } from '../dao/scan.dao.js';
 import type { AppScanResponseDto, ScanResponseDto, ScanReviewResponseDto } from '../dto/scan.response.dto.js';
+import { imageLink } from '../../uploads/file-url.js';
 
 export const ScanMapper = {
   toBo: (d: ScanDao): ScanBo => {
@@ -50,7 +51,7 @@ export const ScanMapper = {
   },
   toDto: (b: ScanBo): ScanResponseDto => ({
     ...b,
-    product: { ...b.product, imageUrl: b.product.imageUrl ?? undefined, dimensions: b.product.dimensions ?? undefined },
+    product: { ...b.product, imageUrl: imageLink(b.product.imageUrl), dimensions: b.product.dimensions ?? undefined },
     retailer: b.retailer ?? undefined,
     productUnitSerial: b.productUnitSerial ?? undefined,
     scannedAt: b.scannedAt.toISOString(),
@@ -70,7 +71,7 @@ export const ScanMapper = {
     productId: b.product.id,
     productName: b.product.name,
     modelCode: b.product.modelCode,
-    imageUrl: b.product.imageUrl ?? undefined,
+    imageUrl: imageLink(b.product.imageUrl),
     serial: b.submittedCode,
     scannedAt: b.scannedAt.toISOString(),
     retailerName: b.retailer?.shopName,

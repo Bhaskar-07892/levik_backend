@@ -6,13 +6,21 @@ import { AuditService } from '../../audit/services/audit.service.js';
 import type { ProductBo, ProductInputBo, ProductQueryBo } from '../bo/product.bo.js';
 import { ProductMapper } from '../mappers/product.mapper.js';
 import { ProductsRepository } from '../repositories/products.repository.js';
+import { UploadsService } from '../../uploads/services/uploads.service.js';
+import { UPLOAD_KEY_PATTERN } from '../../uploads/storage/storage-driver.interface.js';
 
 @Injectable()
 export class ProductsService {
   constructor(
     private readonly products: ProductsRepository,
     private readonly audit: AuditService,
+    private readonly uploads: UploadsService,
   ) {}
+
+  /** imageUrl is a catalogue path/URL or the key of a product-image upload (shown through a signed link). */
+  private async assertImage(imageUrl: string | null | undefined): Promise<void> {
+    if (imageUrl && UPLOAD_KEY_PATTERN.test(imageUrl)) await this.uploads.assertExists(imageUrl, 'product-image');
+  }
 
   async list(query: ProductQueryBo): Promise<Page<ProductBo>> {
     const page = await this.products.findPage(query);
@@ -38,6 +46,7 @@ export class ProductsService {
   }
 
   async create(actor: ActorBo, input: ProductInputBo): Promise<ProductBo> {
+    await this.assertImage(input.imageUrl);
     if (await this.products.skuTaken(input.sku)) {
       throw AppException.rule(ErrorCode.DUPLICATE, `SKU ${input.sku} already exists.`);
     }
@@ -48,6 +57,7 @@ export class ProductsService {
 
   async update(actor: ActorBo, id: string, patch: Partial<ProductInputBo>): Promise<ProductBo> {
     const current = await this.get(id);
+    await this.assertImage(patch.imageUrl);
     if (patch.sku && (await this.products.skuTaken(patch.sku, id))) {
       throw AppException.rule(ErrorCode.DUPLICATE, `SKU ${patch.sku} already exists.`);
     }

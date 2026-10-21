@@ -328,6 +328,28 @@ describe('Levik API (e2e)', () => {
     });
   });
 
+  describe('uploaded product images', () => {
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+    const product = (imageUrl: string, sku: string) => ({
+      name: 'Uploaded Image WC', modelCode: 'UPL-1', category: 'One-Piece Western WC' as const, description: 'E2E product with an uploaded image.',
+      imageUrl, sku, barcode: `89${Date.now()}`.slice(0, 13), mrp: 12000, plumberPoints: 100,
+    });
+
+    it('returns an uploaded product image as a signed link', async () => {
+      const upload = await http.post(api('/uploads')).set('authorization', admin).field('purpose', 'product-image').attach('file', png, 'wc.png');
+      expect(upload.status).toBe(201);
+      const created = await http.post(api('/admin/products')).set('authorization', admin).send(product(upload.body.key, `E2E-IMG-${Date.now()}`));
+      expect(created.status).toBe(201);
+      expect(created.body.imageUrl).toMatch(/^\/api\/v1\/files\/product-image_[0-9a-f-]{36}\.png\?exp=\d+&sig=/);
+      expect((await http.get(created.body.imageUrl)).status).toBe(200);
+    });
+
+    it('refuses an upload key that is not a product image', async () => {
+      const res = await http.post(api('/admin/products')).set('authorization', admin).send(product('product-image_00000000-0000-0000-0000-000000000000.png', `E2E-BAD-${Date.now()}`));
+      expect(res.status).toBe(422);
+    });
+  });
+
   describe('raw UPDATE … RETURNING queries', () => {
     it('activates a scheduled scheme on its start date and audits it with the scheme id', async () => {
       const ds = app.get(DataSource);

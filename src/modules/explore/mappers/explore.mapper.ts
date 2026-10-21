@@ -1,4 +1,4 @@
-import { fileUrl } from '../../uploads/file-url.js';
+import { fileUrl, imageLink } from '../../uploads/file-url.js';
 import type { DealerProductBo, DealerRowBo, DealerStockBo, DealerSummaryBo, ExploreProductBo } from '../bo/explore.bo.js';
 import type {
   ExploreDealerDto,
@@ -18,7 +18,7 @@ export const ExploreMapper = {
       description: bo.description,
       dimensions: bo.dimensions ?? undefined,
       features: bo.features ?? [],
-      imageUrl: bo.imageUrl ?? undefined,
+      imageUrl: imageLink(bo.imageUrl),
       rewardEligible: bo.rewardEligible,
       dealersInStock: bo.dealersInStock,
       earning: {

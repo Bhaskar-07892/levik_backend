@@ -1,6 +1,7 @@
 import type { ProductBo } from '../bo/product.bo.js';
 import type { ProductDao } from '../dao/product.dao.js';
 import type { AppProductResponseDto, ProductResponseDto } from '../dto/product.response.dto.js';
+import { imageLink } from '../../uploads/file-url.js';
 
 export const ProductMapper = {
   toBo: (d: ProductDao): ProductBo => ({
@@ -24,7 +25,7 @@ export const ProductMapper = {
   toDto: (b: ProductBo): ProductResponseDto => ({
     ...b,
     dimensions: b.dimensions ?? undefined,
-    imageUrl: b.imageUrl ?? undefined,
+    imageUrl: imageLink(b.imageUrl),
     createdAt: b.createdAt.toISOString(),
     updatedAt: b.updatedAt.toISOString(),
   }),
@@ -36,7 +37,7 @@ export const ProductMapper = {
     description: b.description,
     dimensions: b.dimensions ?? undefined,
     features: b.features,
-    imageUrl: b.imageUrl ?? undefined,
+    imageUrl: imageLink(b.imageUrl),
     scanPoints: b.rewardEligible ? b.plumberPoints : 0,
   }),
 };

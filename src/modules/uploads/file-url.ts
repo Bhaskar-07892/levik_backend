@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { UPLOAD_KEY_PATTERN } from './storage/storage-driver.interface.js';
 
 const DAY_SECONDS = 86_400;
 
@@ -22,6 +23,15 @@ export function fileUrl(key: string | null | undefined, now = Date.now()): strin
   if (!key) return undefined;
   const exp = (Math.floor(now / 1000 / DAY_SECONDS) + 2) * DAY_SECONDS;
   return `${config().basePath}/${encodeURIComponent(key)}?exp=${exp}&sig=${sign(key, exp)}`;
+}
+
+/**
+ * Image fields that hold either a web path / absolute URL (the bundled catalogue photos) or an upload key from
+ * POST /uploads. Keys become signed links (`/api/v1/files/…`, relative to the API origin); anything else is kept.
+ */
+export function imageLink(stored: string | null | undefined): string | undefined {
+  if (!stored) return undefined;
+  return UPLOAD_KEY_PATTERN.test(stored) ? fileUrl(stored) : stored;
 }
 
 export function verifyFileLink(key: string, exp: number, sig: string, now = Date.now()): boolean {

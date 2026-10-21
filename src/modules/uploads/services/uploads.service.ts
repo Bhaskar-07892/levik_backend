@@ -91,6 +91,12 @@ export class UploadsService {
     return { stream: await this.storage.get(key), contentType: upload.contentType };
   }
 
+  /** For admin-managed images (any admin may reuse another admin's upload): the key exists and has this purpose. */
+  async assertExists(key: string, purpose: UploadPurpose): Promise<void> {
+    const upload = await this.uploads.findByKey(key);
+    if (!upload || upload.purpose !== purpose) throw AppException.rule(ErrorCode.VALIDATION_FAILED, 'Image not found. Upload the file again.');
+  }
+
   async open(key: string, requester: AuthenticatedUser): Promise<{ stream: Readable; contentType: string }> {
     const upload = await this.uploads.findByKey(key);
     if (!upload || (requester.role !== 'admin' && upload.ownerId !== requester.sub)) throw AppException.notFound('File');
