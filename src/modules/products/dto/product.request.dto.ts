@@ -41,9 +41,11 @@ export class CreateProductRequestDto {
   @IsOptional() @IsArray() @ArrayMaxSize(10) @IsString({ each: true }) @MaxLength(80, { each: true })
   features?: string[];
 
+  /** Catalogue path, URL or the key of a product-image upload (POST /uploads). null (on update) removes the image. */
+  @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional() @IsString() @MaxLength(500)
   @IsUrl({ require_tld: false, require_protocol: false, allow_underscores: true }, { message: 'imageUrl must be a URL, a path or an uploaded product-image key' })
-  imageUrl?: string;
+  imageUrl?: string | null;
 
   @Transform(trim) @IsString() @MinLength(3) @MaxLength(40)
   sku: string;
