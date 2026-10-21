@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import type { Readable } from 'node:stream';
@@ -32,6 +32,28 @@ function sniff(buffer: Buffer): string | null {
   return null;
 }
 
+/** Plain-English cause for the common S3 misconfigurations, for the logs. */
+export function storageHint(error: unknown): string {
+  const e = error as { name?: string; code?: string; message?: string; $metadata?: { httpStatusCode?: number } };
+  const name = e?.name && e.name !== 'Error' ? e.name : (e?.code ?? 'Error');
+  const status = e?.$metadata?.httpStatusCode;
+  const hints: Record<string, string> = {
+    NoSuchBucket: 'the bucket does not exist: check S3_BUCKET matches the bucket name exactly',
+    NotFound: 'bucket not found: check S3_BUCKET, and S3_FORCE_PATH_STYLE=true for Supabase',
+    InvalidAccessKeyId: 'the access key id is wrong: check S3_ACCESS_KEY_ID',
+    SignatureDoesNotMatch: 'the secret or region is wrong: check S3_SECRET_ACCESS_KEY and S3_REGION',
+    AccessDenied: 'the key has no write access to this bucket',
+    Forbidden: 'the key has no access to this bucket, or S3_REGION is wrong',
+    ENOTFOUND: 'the endpoint host does not resolve: check S3_ENDPOINT (and S3_FORCE_PATH_STYLE=true for Supabase)',
+  };
+  // Bucket checks (HEAD) carry no error body, so only the status tells what is wrong.
+  const byStatus: Record<number, string> = {
+    403: 'access denied: check S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY and S3_REGION',
+    404: 'bucket not found: check S3_BUCKET, and S3_FORCE_PATH_STYLE=true for Supabase',
+  };
+  return `${name}${status ? ` (HTTP ${status})` : ''}: ${hints[name] ?? (status ? byStatus[status] : undefined) ?? e?.message ?? 'unknown storage error'}`;
+}
+
 export interface UploadedFileInput {
   buffer: Buffer;
   size: number;
@@ -40,6 +62,7 @@ export interface UploadedFileInput {
 
 @Injectable()
 export class UploadsService {
+  private readonly logger = new Logger(UploadsService.name);
   private readonly maxBytes: number;
 
   constructor(
@@ -59,7 +82,12 @@ export class UploadsService {
       throw AppException.rule(ErrorCode.VALIDATION_FAILED, `Unsupported file type for ${purpose}. Allowed: ${Object.values(ALLOWED[purpose]).join(', ')}.`);
     }
     const key = `${purpose}_${randomUUID()}.${extension}`;
-    await this.storage.put(key, file.buffer, contentType);
+    try {
+      await this.storage.put(key, file.buffer, contentType);
+    } catch (error) {
+      this.logger.error({ err: error, storage: this.storage.describe(), key }, `Could not store upload: ${storageHint(error)}`);
+      throw new AppException(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.STORAGE_UNAVAILABLE, 'File storage is not reachable right now, so the file was not saved. Try again later.');
+    }
     await this.uploads.insert({
       key,
       ownerId: owner.sub,

@@ -8,6 +8,10 @@ export interface StorageDriver {
   get(key: string): Promise<Readable>;
   /** Short-lived direct download link from the bucket. Drivers without one (local disk) are streamed by the API instead. */
   signedUrl?(key: string, ttlSeconds: number): Promise<string>;
+  /** Where files go, for logs (no secrets). */
+  describe(): string;
+  /** Throws when the storage cannot be reached with the configured settings (checked at boot). */
+  check(): Promise<void>;
 }
 
 /** Upload keys are `<purpose>_<uuid>.<ext>` and generated server-side; anything else is rejected before touching storage. */

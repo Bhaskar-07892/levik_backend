@@ -1,4 +1,4 @@
-import { GetObjectCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, HeadBucketCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NotFoundException } from '@nestjs/common';
 import type { Readable } from 'node:stream';
@@ -16,6 +16,7 @@ export interface S3Settings {
 /** Private S3-compatible bucket. Objects are never public: clients get short-lived presigned links. */
 export class S3StorageDriver implements StorageDriver {
   private readonly bucket: string;
+  private readonly endpoint: string;
 
   constructor(
     settings: S3Settings,
@@ -27,6 +28,15 @@ export class S3StorageDriver implements StorageDriver {
     }),
   ) {
     this.bucket = settings.bucket;
+    this.endpoint = settings.endpoint ?? `s3.${settings.region}.amazonaws.com`;
+  }
+
+  describe(): string {
+    return `bucket "${this.bucket}" at ${this.endpoint}`;
+  }
+
+  async check(): Promise<void> {
+    await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
   }
 
   async put(key: string, body: Buffer, contentType: string): Promise<void> {

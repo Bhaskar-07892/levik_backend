@@ -19,6 +19,7 @@ export const ErrorCode = {
   FORBIDDEN: 'FORBIDDEN',
   CONFLICT: 'CONFLICT',
   INTERNAL: 'INTERNAL',
+  STORAGE_UNAVAILABLE: 'STORAGE_UNAVAILABLE',
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 

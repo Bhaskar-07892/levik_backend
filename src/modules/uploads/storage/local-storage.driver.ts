@@ -29,6 +29,14 @@ export class LocalStorageDriver implements StorageDriver {
     return createReadStream(path);
   }
 
+  describe(): string {
+    return `local disk (${this.root})`;
+  }
+
+  async check(): Promise<void> {
+    await mkdir(this.root, { recursive: true });
+  }
+
   private pathFor(key: string): string {
     if (!UPLOAD_KEY_PATTERN.test(key)) throw new NotFoundException('File not found');
     return join(this.root, objectPath(key));
