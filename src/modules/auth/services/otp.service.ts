@@ -13,6 +13,8 @@ interface OtpSettings {
   otpTestCodes: Map<string, string>;
   /** TEST_OTP: accepted for every number when set (never in production). */
   otpTestCodeForAll?: string;
+  /** RATE_LIMIT_DISABLED: skip the resend cooldown and hourly cap (never in production). */
+  rateLimitDisabled?: boolean;
 }
 
 const RESEND_COOLDOWN_MS = 30_000;
@@ -33,13 +35,7 @@ export class OtpService {
   }
 
   async request(phoneDigits: string): Promise<{ expiresIn: number }> {
-    const stats = await this.challenges.recentStats(phoneDigits, new Date(Date.now() - 3_600_000));
-    if (stats.lastAt && Date.now() - stats.lastAt.getTime() < RESEND_COOLDOWN_MS) {
-      throw new AppException(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.LIMIT_REACHED, 'Please wait 30 seconds before requesting another OTP.');
-    }
-    if (stats.count >= MAX_PER_HOUR) {
-      throw new AppException(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.LIMIT_REACHED, 'Too many OTP requests. Try again in an hour.');
-    }
+    if (!this.settings.rateLimitDisabled) await this.assertWithinLimits(phoneDigits);
     const testCode = this.settings.otpTestCodes.get(phoneDigits) ?? this.settings.otpTestCodeForAll;
     const code = testCode ?? String(randomInt(0, 1_000_000)).padStart(6, '0');
     await this.challenges.create({
@@ -49,6 +45,17 @@ export class OtpService {
     });
     if (!testCode) await this.sms.sendOtp(phoneDigits, code);
     return { expiresIn: this.settings.otpTtlSeconds };
+  }
+
+  /** Resend cooldown and hourly cap per number. */
+  private async assertWithinLimits(phoneDigits: string): Promise<void> {
+    const stats = await this.challenges.recentStats(phoneDigits, new Date(Date.now() - 3_600_000));
+    if (stats.lastAt && Date.now() - stats.lastAt.getTime() < RESEND_COOLDOWN_MS) {
+      throw new AppException(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.LIMIT_REACHED, 'Please wait 30 seconds before requesting another OTP.');
+    }
+    if (stats.count >= MAX_PER_HOUR) {
+      throw new AppException(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.LIMIT_REACHED, 'Too many OTP requests. Try again in an hour.');
+    }
   }
 
   /** Consumes the latest open challenge when the code matches. */

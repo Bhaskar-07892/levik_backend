@@ -32,6 +32,8 @@ export const envValidationSchema = Joi.object({
   OTP_TEST_CODES: Joi.string().allow('').default(''),
   /** One 6-digit code accepted for EVERY number (no SMS is sent). For test environments; ignored when APP_ENV is production. */
   TEST_OTP: Joi.string().pattern(/^\d{6}$/).allow('').optional(),
+  /** true = no request throttling and no OTP resend cooldown / hourly cap (development only; ignored when APP_ENV is production). */
+  RATE_LIMIT_DISABLED: Joi.boolean().default(false),
   SMS_PROVIDER: Joi.string().valid('console', 'msg91').default('console'),
   // oxlint-disable-next-line unicorn/no-thenable -- Joi's conditional schema syntax
   MSG91_AUTH_KEY: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required(), otherwise: Joi.optional() }),

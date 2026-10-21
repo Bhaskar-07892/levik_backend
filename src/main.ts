@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module.js';
+import { rateLimitDisabled } from './config/configuration.js';
 import { setupApp } from './setup-app.js';
 
 async function bootstrap() {
@@ -12,5 +13,6 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 4000);
   await app.listen(port);
   app.get(Logger).log(`Levik API listening on :${port}`);
+  if (rateLimitDisabled()) app.get(Logger).warn('Rate limiting is OFF (RATE_LIMIT_DISABLED=true). Never use this in production.');
 }
 await bootstrap();

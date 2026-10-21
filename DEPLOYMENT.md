@@ -115,14 +115,14 @@ Use a separate bucket and token for production. Keep the keys only in Render, ne
 
 ## Test accounts on staging
 
-Staging runs with `APP_ENV=staging` and `TEST_OTP=123456`: **any** mobile number signs in with OTP `123456`, and no SMS is sent. The seeded accounts are `98290 11234` (plumber) and `98290 41127` (retailer). Any other number goes through role selection and registration as a new user. The API docs are at `/api/docs`.
+Staging runs with `APP_ENV=staging`, `RATE_LIMIT_DISABLED=true` (no OTP cooldown or request throttling while testing) and `TEST_OTP=123456`: **any** mobile number signs in with OTP `123456`, and no SMS is sent. The seeded accounts are `98290 11234` (plumber) and `98290 41127` (retailer). Any other number goes through role selection and registration as a new user. The API docs are at `/api/docs`.
 
 To turn the shared code off, delete `TEST_OTP` in Render → levik-api → **Environment**. The per-number codes in `OTP_TEST_CODES` keep working.
 
 ## Going to production later
 
 Repeat the steps with a `levik-prod` Neon project, a second Render service and Vercel production domain, and an EAS `production` build. In production:
-- Set `APP_ENV=production`. That turns off test OTPs and the docs.
+- Set `APP_ENV=production`. That turns off test OTPs and the docs, and forces rate limiting back on. Set `RATE_LIMIT_DISABLED=false` too.
 - Set `SMS_PROVIDER=msg91` with its keys.
 - Use a production bucket and token for uploads (step 5).
 - Use a paid Render instance.

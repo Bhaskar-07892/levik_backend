@@ -5,6 +5,14 @@ export function appEnv(): string {
   return process.env.APP_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development');
 }
 
+/**
+ * RATE_LIMIT_DISABLED=true turns off request throttling and the OTP resend cooldown / hourly cap, for
+ * development and testing. Always false when APP_ENV is production, whatever the variable says.
+ */
+export function rateLimitDisabled(): boolean {
+  return appEnv() !== 'production' && process.env.RATE_LIMIT_DISABLED === 'true';
+}
+
 export const appConfig = registerAs('app', () => ({
   env: process.env.NODE_ENV ?? 'development',
   appEnv: appEnv(),
@@ -32,6 +40,7 @@ export const authConfig = registerAs('auth', () => ({
   otpMaxAttempts: Number(process.env.OTP_MAX_ATTEMPTS ?? 5),
   otpTestCodes: parseTestCodes(process.env.OTP_TEST_CODES ?? ''),
   otpTestCodeForAll: appEnv() === 'production' ? undefined : process.env.TEST_OTP || undefined,
+  rateLimitDisabled: rateLimitDisabled(),
   smsProvider: (process.env.SMS_PROVIDER ?? 'console') as 'console' | 'msg91',
   msg91AuthKey: process.env.MSG91_AUTH_KEY,
   msg91TemplateId: process.env.MSG91_TEMPLATE_ID,

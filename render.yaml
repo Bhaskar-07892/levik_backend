@@ -45,6 +45,9 @@ services:
       # 123456 signs in ANY number on staging (no SMS). Ignored when APP_ENV=production.
       - key: TEST_OTP
         value: '123456'
+      # No throttling / OTP cooldown while testing. Ignored when APP_ENV=production; set false for production.
+      - key: RATE_LIMIT_DISABLED
+        value: 'true'
       - key: SMS_PROVIDER
         value: console
       # Uploads: local disk until a bucket is set up. Free instances have no persistent disk, so local uploads

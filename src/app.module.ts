@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
-import { configurations } from './config/configuration.js';
+import { configurations, rateLimitDisabled } from './config/configuration.js';
 import { envValidationSchema } from './config/env.validation.js';
 import { DatabaseModule } from './database/database.module.js';
 import { AdminsModule } from './modules/admins/admins.module.js';
@@ -54,7 +54,11 @@ import { UploadsModule } from './modules/uploads/uploads.module.js';
         autoLogging: { ignore: (req) => req.url?.includes('/health/') ?? false },
       },
     }),
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 300 }],
+      // RATE_LIMIT_DISABLED=true (never in production) switches every throttle off.
+      skipIf: () => rateLimitDisabled(),
+    }),
     ScheduleModule.forRoot(),
 
     // Infrastructure (global)

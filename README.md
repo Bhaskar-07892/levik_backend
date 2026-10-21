@@ -219,6 +219,7 @@ See [.env.example](.env.example). The app refuses to start if a required variabl
 
 - `NODE_ENV=production`: optimised logging and refuses demo resets. `APP_ENV` (defaults to `production` when `NODE_ENV=production`) controls Swagger and test OTP codes: both stay on with `APP_ENV=staging`.
 - `SMS_PROVIDER=msg91` with `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_ID`. The default `console` provider only logs OTPs.
+- `RATE_LIMIT_DISABLED=true`: turns off request throttling and the OTP resend cooldown and hourly cap, for development and staging. It is ignored when `APP_ENV=production`, so production always keeps rate limits; set it to `false` there anyway. Wrong-OTP attempts still lock after 5 tries.
 - `TEST_OTP`: one 6-digit code that signs in **every** number without sending an SMS, for test environments (staging sets `123456`). `OTP_TEST_CODES` sets codes for specific numbers and wins over it. Both are ignored when `APP_ENV=production`.
 - `STORAGE_DRIVER`: `local` (files under `STORAGE_DIR`, for development) or `s3` for any S3-compatible bucket (Cloudflare R2, Backblaze B2, AWS S3) configured with `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. See [DEPLOYMENT.md](DEPLOYMENT.md#5-file-storage-cloudflare-r2).
 - `DB_RUN_MIGRATIONS=false` if migrations are run as a separate deploy step.
