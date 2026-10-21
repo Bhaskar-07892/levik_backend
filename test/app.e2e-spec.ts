@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module.js';
 import { buildDataSourceOptions } from '../src/database/data-source-options.js';
 import { DEMO_PASSWORD, seedDemoData } from '../src/database/seeds/seed.js';
 import { TokenService } from '../src/modules/auth/services/token.service.js';
+import { SchemeSchedulerService } from '../src/modules/schemes/services/scheme-scheduler.service.js';
 import { setupApp } from '../src/setup-app.js';
 
 /**
@@ -324,6 +325,28 @@ describe('Levik API (e2e)', () => {
 
       const cleared = await http.patch(api('/app/plumbers/me')).set('authorization', plumber).send({ photoKey: null });
       expect(cleared.body.photoUrl).toBeUndefined();
+    });
+  });
+
+  describe('raw UPDATE … RETURNING queries', () => {
+    it('activates a scheduled scheme on its start date and audits it with the scheme id', async () => {
+      const ds = app.get(DataSource);
+      const [{ id }] = await ds.query(`select id from schemes order by id limit 1`);
+      await ds.query(`update schemes set status = 'Scheduled', start_date = now() - interval '1 day', end_date = now() + interval '30 days' where id = $1`, [id]);
+
+      const result = await app.get(SchemeSchedulerService).run();
+      expect(result.activated).toContain(id);
+      const [audit] = await ds.query(`select entity_id from audit_logs where action = 'Scheme activated' order by at desc limit 1`);
+      expect(audit.entity_id).toBe(id);
+    });
+
+    it('reports the new reward stock in the audit log after an adjustment', async () => {
+      const rewards = await http.get(api('/admin/rewards')).set('authorization', admin);
+      const reward = (rewards.body.items ?? rewards.body)[0] as { id: string; stock: number };
+      const res = await http.post(api(`/admin/rewards/${reward.id}/stock-adjustments`)).set('authorization', admin).send({ delta: 3, reason: 'Restock for e2e test' });
+      expect(res.status).toBe(200);
+      const [audit] = await app.get(DataSource).query(`select summary from audit_logs where action = 'Reward stock adjusted' order by at desc limit 1`);
+      expect(audit.summary).toContain(`(now ${reward.stock + 3})`);
     });
   });
 

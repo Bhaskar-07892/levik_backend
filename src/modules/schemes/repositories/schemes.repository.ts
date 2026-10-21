@@ -6,6 +6,7 @@ import { BaseRepository } from '../../../database/base.repository.js';
 import type { SchemeQueryBo } from '../bo/scheme.bo.js';
 import { SchemeAwardDao } from '../dao/scheme-award.dao.js';
 import { SchemeDao } from '../dao/scheme.dao.js';
+import { returnedRows } from '../../../database/returned-rows.js';
 
 export interface ParticipantRow {
   id: string;
@@ -69,11 +70,11 @@ export class SchemesRepository extends BaseRepository<SchemeDao> {
 
   /** Scheduled → Active and Active/Paused → Completed by date. Returns the affected IDs. */
   async promoteByDate(manager: EntityManager): Promise<{ activated: string[]; completed: string[] }> {
-    const activated: Array<{ id: string }> = await manager.query(
-      `update schemes set status = 'Active' where status = 'Scheduled' and start_date <= now() and end_date >= now() returning id`,
+    const activated = returnedRows<{ id: string }>(
+      await manager.query(`update schemes set status = 'Active' where status = 'Scheduled' and start_date <= now() and end_date >= now() returning id`),
     );
-    const completed: Array<{ id: string }> = await manager.query(
-      `update schemes set status = 'Completed' where status in ('Active', 'Paused', 'Scheduled') and end_date < now() returning id`,
+    const completed = returnedRows<{ id: string }>(
+      await manager.query(`update schemes set status = 'Completed' where status in ('Active', 'Paused', 'Scheduled') and end_date < now() returning id`),
     );
     return { activated: activated.map((r) => r.id), completed: completed.map((r) => r.id) };
   }

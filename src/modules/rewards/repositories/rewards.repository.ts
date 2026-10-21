@@ -4,6 +4,7 @@ import { likePattern, type Page } from '../../../common/dto/pagination.dto.js';
 import { BaseRepository } from '../../../database/base.repository.js';
 import type { RewardInputBo, RewardQueryBo } from '../bo/reward.bo.js';
 import { RewardDao } from '../dao/reward.dao.js';
+import { returnedRows } from '../../../database/returned-rows.js';
 
 @Injectable()
 export class RewardsRepository extends BaseRepository<RewardDao> {
@@ -52,7 +53,7 @@ export class RewardsRepository extends BaseRepository<RewardDao> {
 
   /** Atomic stock change guarded by the CHECK (stock >= 0) constraint. */
   async changeStock(id: string, delta: number, manager: EntityManager): Promise<number> {
-    const rows: Array<{ stock: number }> = await manager.query(`update rewards set stock = stock + $2 where id = $1 returning stock`, [id, delta]);
+    const rows = returnedRows<{ stock: number }>(await manager.query(`update rewards set stock = stock + $2 where id = $1 returning stock`, [id, delta]));
     return rows[0].stock;
   }
 }
