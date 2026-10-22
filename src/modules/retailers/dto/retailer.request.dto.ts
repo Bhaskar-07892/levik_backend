@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 import {
   RETAILER_ACCOUNT_STATUSES,
   RETAILER_VERIFICATION_STATUSES,
@@ -12,6 +12,9 @@ import { ReasonRequestDto } from '../../../common/dto/reason.request.dto.js';
 import { trim, upperTrim } from '../../../common/utils/transform.util.js';
 
 const GSTIN = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const PAN = /^[A-Z]{5}\d{4}[A-Z]$/;
+const PINCODE = /^[1-9]\d{5}$/;
+const UPLOAD_KEY = /^[a-z-]+_[0-9a-f-]{36}\.[a-z]+$/;
 
 export class RetailerQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: RETAILER_VERIFICATION_STATUSES })
@@ -46,6 +49,8 @@ export class UpdateRetailerRequestDto {
   gstin?: string | null;
   @IsOptional() @Transform(trim) @IsString() @MinLength(3) @MaxLength(120) distributor?: string;
   @IsOptional() @IsInt() @Min(10_000) @Max(1_000_000_000) monthlyTarget?: number;
+  @IsOptional() @ValidateIf((_, v) => v !== null) @Matches(PINCODE, { message: 'Enter a valid 6-digit pincode.' }) pincode?: string | null;
+  @IsOptional() @Transform(upperTrim) @ValidateIf((_, v) => v !== null && v !== '') @Matches(PAN, { message: 'Enter a valid 10-character PAN.' }) pan?: string | null;
 }
 
 export class ReviewRetailerRequestDto {
@@ -73,6 +78,14 @@ export class RegisterRetailerRequestDto {
   @IsOptional() @Transform(upperTrim) @ValidateIf((_, v) => v !== '') @Matches(GSTIN, { message: 'Enter a valid 15-character GSTIN.' })
   gstin?: string;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(120) distributor?: string;
+  @Matches(PINCODE, { message: 'Enter a valid 6-digit pincode.' }) pincode: string;
+  @IsOptional() @ValidateIf((_, v) => v !== '') @IsEmail() email?: string;
+  @IsOptional() @Transform(upperTrim) @ValidateIf((_, v) => v !== '') @Matches(PAN, { message: 'Enter a valid 10-character PAN.' }) pan?: string;
+  /** Upload keys from POST /uploads made while signed in as a guest (purposes shop-photo, gst-certificate). */
+  @IsOptional() @Matches(UPLOAD_KEY) shopPhotoKey?: string;
+  @IsOptional() @Matches(UPLOAD_KEY) gstCertificateKey?: string;
+  @IsOptional() @IsLatitude() latitude?: number;
+  @IsOptional() @IsLongitude() longitude?: number;
 }
 
 export class UpdateMyRetailerProfileRequestDto {
@@ -83,6 +96,12 @@ export class UpdateMyRetailerProfileRequestDto {
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(80) photoKey?: string | null;
   /** Upload key from POST /uploads (purpose shop-photo); null removes the photo. */
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(80) shopPhotoKey?: string | null;
+  @IsOptional() @ValidateIf((_, v) => v !== null) @Matches(PINCODE, { message: 'Enter a valid 6-digit pincode.' }) pincode?: string | null;
+  @IsOptional() @Transform(upperTrim) @ValidateIf((_, v) => v !== null && v !== '') @Matches(PAN, { message: 'Enter a valid 10-character PAN.' }) pan?: string | null;
+  /** Upload key (purpose gst-certificate); null removes it. */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @Matches(UPLOAD_KEY) gstCertificateKey?: string | null;
+  @IsOptional() @IsLatitude() latitude?: number;
+  @IsOptional() @IsLongitude() longitude?: number;
 }
 
 export class StoreQueryDto extends PaginationQueryDto {

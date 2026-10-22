@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
-import { PRODUCT_CATEGORIES, STOCK_STATUSES, type ProductCategory, type StockStatus } from '../../../common/domain/enums.js';
+import { PRODUCT_CATEGORIES, STOCK_REASONS, STOCK_STATUSES, type ProductCategory, type StockReason, type StockStatus } from '../../../common/domain/enums.js';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto.js';
 
 export class InventoryQueryDto extends PaginationQueryDto {
@@ -66,4 +66,41 @@ export class InventorySummaryResponseDto {
   outOfStock: number;
   /** Low-stock threshold from settings. */
   threshold: number;
+}
+
+export class StockMovementQueryDto extends PaginationQueryDto {
+  @IsOptional() @IsString() retailerId?: string;
+  @IsOptional() @IsString() productId?: string;
+}
+
+export class MyStockMovementQueryDto extends PaginationQueryDto {
+  @IsOptional() @IsString() productId?: string;
+}
+
+/** One change to a retailer's stock, with what caused it. */
+export class StockMovementResponseDto {
+  id: string;
+  retailerId: string;
+  retailerName: string;
+  productId: string;
+  productName: string;
+  modelCode: string;
+  /** Units added (+) or removed (−). */
+  delta: number;
+  balanceAfter: number;
+  @ApiProperty({ enum: STOCK_REASONS })
+  reason: StockReason;
+  /** order / scan / bill, with its id. */
+  relatedType?: string;
+  relatedId?: string;
+  note?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export class StockMovementPageResponseDto {
+  items: StockMovementResponseDto[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

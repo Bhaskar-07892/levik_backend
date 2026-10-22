@@ -1,9 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsDate, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsDate, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
 import { SCAN_STATUSES, type ScanStatus } from '../../../common/domain/enums.js';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto.js';
 import { trim } from '../../../common/utils/transform.util.js';
+import { BillCustomerDto } from '../../bills/dto/bill.dto.js';
 
 
 export class ScanQueryDto extends PaginationQueryDto {
@@ -57,4 +58,19 @@ export class SubmitScanRequestDto {
   /** Key from POST /uploads (purpose scan-photo). */
   @IsOptional() @IsString()
   photoKey?: string;
+}
+
+export class RetailerSaleQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ enum: ['Pending', 'Confirmed', 'Declined'] })
+  @IsOptional() @IsIn(['Pending', 'Confirmed', 'Declined']) decision?: 'Pending' | 'Confirmed' | 'Declined';
+}
+
+export class SaleBillRequestDto extends BillCustomerDto {
+  /** Selling price for this unit; defaults to the catalogue price. */
+  @IsOptional() @IsInt() @Min(0) @Max(100_000_000) unitPrice?: number;
+}
+
+export class ConfirmSaleRequestDto {
+  /** Also issue a bill to the buyer (e.g. the plumber or their customer). */
+  @IsOptional() @ValidateNested() @Type(() => SaleBillRequestDto) bill?: SaleBillRequestDto;
 }

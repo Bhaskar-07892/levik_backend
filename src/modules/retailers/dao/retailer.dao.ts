@@ -54,6 +54,23 @@ export class RetailerDao {
   @Column('text', { name: 'rejection_reason', nullable: true })
   rejectionReason: string | null;
 
+  @Column('text', { nullable: true })
+  pincode: string | null;
+
+  @Column('text', { nullable: true })
+  pan: string | null;
+
+  /** Upload key of the GST registration certificate (onboarding document). */
+  @Column('text', { name: 'gst_certificate_key', nullable: true })
+  gstCertificateKey: string | null;
+
+  /** Shop location, for "nearby" and delivery. */
+  @Column('double precision', { nullable: true })
+  latitude: number | null;
+
+  @Column('double precision', { nullable: true })
+  longitude: number | null;
+
   /** Upload key (image ID) of the owner's profile photo. */
   @Column('text', { name: 'photo_key', nullable: true })
   photoKey: string | null;

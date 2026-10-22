@@ -12,7 +12,7 @@ const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // hard cap; the configured UPLOAD_MA
 
 @ApiTags('Uploads')
 @ApiBearerAuth()
-@Roles('admin', 'plumber', 'retailer')
+@Roles('admin', 'plumber', 'retailer', 'guest')
 @Controller('uploads')
 export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}
@@ -30,7 +30,9 @@ export class UploadsController {
         ? ['product-image']
         : user.role === 'plumber'
           ? ['scan-photo', 'profile-photo']
-          : ['invoice-document', 'profile-photo', 'shop-photo'];
+          : user.role === 'retailer'
+            ? ['invoice-document', 'profile-photo', 'shop-photo', 'gst-certificate']
+            : ['profile-photo', 'shop-photo', 'gst-certificate']; // guest: onboarding documents before registering
     if (!allowed.includes(body.purpose)) {
       throw AppException.rule(ErrorCode.FORBIDDEN, `Your account cannot upload ${body.purpose} files.`);
     }

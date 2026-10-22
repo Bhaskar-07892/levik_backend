@@ -1,4 +1,4 @@
-import { configureFileUrls, fileUrl, verifyFileLink } from './file-url.js';
+import { configureFileUrls, documentUrl, fileUrl, verifyDocumentLink, verifyFileLink } from './file-url.js';
 
 const KEY = 'profile-photo_0b6b5a3e-8f0e-4a8e-9c7e-0d6f3c1a2b4c.jpg';
 const NOW = Date.UTC(2026, 9, 19, 10, 30);
@@ -45,5 +45,23 @@ describe('file links', () => {
   it('returns undefined when there is no file', () => {
     expect(fileUrl(null)).toBeUndefined();
     expect(fileUrl(undefined)).toBeUndefined();
+  });
+});
+
+describe('document links', () => {
+  beforeAll(() => configureFileUrls('unit-test-secret-unit-test-secret-1234', 'api'));
+
+  it('signs a document path that only verifies for the same kind and id', () => {
+    const url = documentUrl('bills', 'BILL-7', NOW);
+    const [path, query] = url.split('?');
+    const params = new URLSearchParams(query);
+    expect(path).toBe('/api/v1/documents/bills/BILL-7');
+    const exp = Number(params.get('exp'));
+    const sig = params.get('sig')!;
+    expect(verifyDocumentLink('bills', 'BILL-7', exp, sig, NOW)).toBe(true);
+    expect(verifyDocumentLink('bills', 'BILL-8', exp, sig, NOW)).toBe(false);
+    expect(verifyDocumentLink('purchase-invoices', 'BILL-7', exp, sig, NOW)).toBe(false);
+    // A document signature is never valid as a file link, and vice versa.
+    expect(verifyFileLink('bills/BILL-7', exp, sig, NOW)).toBe(false);
   });
 });

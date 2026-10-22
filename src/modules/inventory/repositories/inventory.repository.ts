@@ -44,20 +44,7 @@ export class InventoryRepository extends BaseRepository<InventoryItemDao> {
     return this.repo(manager).findOne({ where: { id }, relations: { product: true, retailer: true } });
   }
 
-  async update(id: string, quantity: number, updatedBy: string, manager?: EntityManager): Promise<void> {
-    await this.repo(manager).update({ id }, { quantity, updatedBy, updatedAt: () => 'now()' });
-  }
-
-  /** Retailer stock report: insert or overwrite the line for this product. */
-  async upsert(retailerId: string, productId: string, quantity: number): Promise<string> {
-    const rows: Array<{ id: string }> = await this.dataSource.query(
-      `insert into inventory (retailer_id, product_id, quantity, updated_by)
-       values ($1, $2, $3, 'Retailer app')
-       on conflict (retailer_id, product_id) do update
-         set quantity = excluded.quantity, updated_at = now(), updated_by = 'Retailer app'
-       returning id`,
-      [retailerId, productId, quantity],
-    );
-    return rows[0].id;
+  async idFor(retailerId: string, productId: string): Promise<string | undefined> {
+    return (await this.repo().findOne({ where: { retailerId, productId }, select: { id: true } }))?.id;
   }
 }

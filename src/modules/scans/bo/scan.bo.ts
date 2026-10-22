@@ -1,5 +1,5 @@
 import type { CheckBo } from '../../../common/bo/check.bo.js';
-import type { AccountStatus, PlumberVerificationStatus, ProductCategory, ScanStatus } from '../../../common/domain/enums.js';
+import type { AccountStatus, PlumberVerificationStatus, ProductCategory, RetailerDecision, ScanStatus } from '../../../common/domain/enums.js';
 import type { StatusEventBo } from '../../audit/bo/audit.bo.js';
 import type { LinkedInvoiceBo } from '../../invoices/bo/invoice.bo.js';
 import type { PointsBalanceBo } from '../../points/bo/points.bo.js';
@@ -25,6 +25,7 @@ export interface ScanBo {
     plumberPoints: number;
     rewardEligible: boolean;
     isActive: boolean;
+    mrp: number;
   };
   retailer: { id: string; shopName: string; verificationStatus: string } | null;
   submittedCode: string;
@@ -43,6 +44,33 @@ export interface ScanBo {
   flagReason: string | null;
   reviewedBy: string | null;
   reviewedAt: Date | null;
+  /** The selected retailer's answer to this sale; null while waiting. */
+  retailerDecision: RetailerDecision | null;
+  retailerDecidedAt: Date | null;
+  retailerNote: string | null;
+  retailerPoints: number | null;
+}
+
+/** A plumber's "bought from you" scan, as the retailer sees it. */
+export interface RetailerSaleBo {
+  scan: ScanBo;
+  /** Incentive the retailer earns by confirming (or earned). */
+  incentivePoints: number;
+  bill: { id: string; billNumber: string } | null;
+}
+
+export interface ConfirmSaleBo {
+  /** Optional bill for the buyer; the product and quantity come from the scan. */
+  bill?: { customerName: string; customerMobile?: string; unitPrice?: number };
+}
+
+export interface ConfirmSaleResultBo {
+  retailerPoints: number;
+  billId: string | null;
+  /** True when the plumber's scan was approved and credited straight away. */
+  autoApproved: boolean;
+  /** Blocking checks that keep it waiting for Levik, when not auto-approved. */
+  pendingReasons: string[];
 }
 
 export interface ScanReviewBo {

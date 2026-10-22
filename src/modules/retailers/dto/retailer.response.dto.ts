@@ -28,6 +28,12 @@ export class RetailerResponseDto {
   /** Signed links to the owner's profile photo and the shop front photo, relative to the API origin. */
   photoUrl?: string;
   shopPhotoUrl?: string;
+  /** Signed link to the GST registration certificate uploaded at onboarding. */
+  gstCertificateUrl?: string;
+  pincode?: string;
+  pan?: string;
+  latitude?: number;
+  longitude?: number;
   lastLoginAt?: string;
 }
 

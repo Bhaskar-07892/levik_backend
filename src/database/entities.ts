@@ -4,6 +4,11 @@ import { StatusEventDao } from '../modules/audit/dao/status-event.dao.js';
 import { OtpChallengeDao } from '../modules/auth/dao/otp-challenge.dao.js';
 import { RefreshTokenDao } from '../modules/auth/dao/refresh-token.dao.js';
 import { InventoryItemDao } from '../modules/inventory/dao/inventory-item.dao.js';
+import { StockMovementDao } from '../modules/inventory/dao/stock-movement.dao.js';
+import { OrderLineDao } from '../modules/orders/dao/order-line.dao.js';
+import { OrderDao } from '../modules/orders/dao/order.dao.js';
+import { BillLineDao } from '../modules/bills/dao/bill-line.dao.js';
+import { CustomerBillDao } from '../modules/bills/dao/customer-bill.dao.js';
 import { InvoiceLineDao } from '../modules/invoices/dao/invoice-line.dao.js';
 import { InvoiceDao } from '../modules/invoices/dao/invoice.dao.js';
 import { LabelBatchDao } from '../modules/labels/dao/label-batch.dao.js';
@@ -31,6 +36,11 @@ export const ENTITIES = [
   OtpChallengeDao,
   RefreshTokenDao,
   InventoryItemDao,
+  StockMovementDao,
+  OrderDao,
+  OrderLineDao,
+  CustomerBillDao,
+  BillLineDao,
   InvoiceDao,
   InvoiceLineDao,
   LabelBatchDao,

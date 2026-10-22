@@ -1,5 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
-import { SCAN_STATUSES, type ScanStatus } from '../../../common/domain/enums.js';
+import { SCAN_STATUSES, type RetailerDecision, type ScanStatus } from '../../../common/domain/enums.js';
 import { PlumberDao } from '../../plumbers/dao/plumber.dao.js';
 import { ProductDao } from '../../products/dao/product.dao.js';
 import { RetailerDao } from '../../retailers/dao/retailer.dao.js';
@@ -74,4 +74,21 @@ export class ScanDao {
 
   @Column('timestamptz', { name: 'reviewed_at', nullable: true })
   reviewedAt: Date | null;
+
+  /** The selected retailer's answer to this "bought from you" claim; null while waiting. */
+  @Column('text', { name: 'retailer_decision', nullable: true })
+  retailerDecision: RetailerDecision | null;
+
+  @Column('timestamptz', { name: 'retailer_decided_at', nullable: true })
+  retailerDecidedAt: Date | null;
+
+  @Column('text', { name: 'retailer_note', nullable: true })
+  retailerNote: string | null;
+
+  /** Incentive credited to the retailer when they confirmed the sale. */
+  @Column('int', { name: 'retailer_points', nullable: true })
+  retailerPoints: number | null;
+
+  @Column('text', { name: 'retailer_ledger_txn_id', nullable: true })
+  retailerLedgerTxnId: string | null;
 }

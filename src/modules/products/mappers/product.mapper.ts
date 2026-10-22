@@ -39,5 +39,6 @@ export const ProductMapper = {
     features: b.features,
     imageUrl: imageLink(b.imageUrl),
     scanPoints: b.rewardEligible ? b.plumberPoints : 0,
+    listPrice: b.mrp,
   }),
 };

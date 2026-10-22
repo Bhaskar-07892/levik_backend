@@ -32,6 +32,8 @@ import { SchemesModule } from './modules/schemes/schemes.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { SupportModule } from './modules/support/support.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
+import { OrdersModule } from './modules/orders/orders.module.js';
+import { BillsModule } from './modules/bills/bills.module.js';
 
 @Module({
   imports: [
@@ -82,6 +84,8 @@ import { UploadsModule } from './modules/uploads/uploads.module.js';
     RewardsModule,
     RedemptionsModule,
     InventoryModule,
+    OrdersModule,
+    BillsModule,
     ExploreModule,
     SupportModule,
     AnalyticsModule,

@@ -34,6 +34,20 @@ export function imageLink(stored: string | null | undefined): string | undefined
   return UPLOAD_KEY_PATTERN.test(stored) ? fileUrl(stored) : stored;
 }
 
+/**
+ * Signed link to a generated PDF (purchase invoice, customer bill), e.g. `documentUrl('bills', 'BILL-12')`
+ * → `/api/v1/documents/bills/BILL-12?exp=…&sig=…`. Same lifetime and signing as file links, different payload.
+ */
+export function documentUrl(kind: 'purchase-invoices' | 'bills', id: string, now = Date.now()): string {
+  const exp = (Math.floor(now / 1000 / DAY_SECONDS) + 2) * DAY_SECONDS;
+  const path = `${kind}/${id}`;
+  return `${config().basePath.replace(/\/files$/, '/documents')}/${encodeURIComponent(kind)}/${encodeURIComponent(id)}?exp=${exp}&sig=${sign(`doc:${path}`, exp)}`;
+}
+
+export function verifyDocumentLink(kind: string, id: string, exp: number, sig: string, now = Date.now()): boolean {
+  return verifyFileLink(`doc:${kind}/${id}`, exp, sig, now);
+}
+
 export function verifyFileLink(key: string, exp: number, sig: string, now = Date.now()): boolean {
   if (!Number.isInteger(exp) || exp * 1000 < now) return false;
   const expected = Buffer.from(sign(key, exp));

@@ -176,6 +176,23 @@ Every physical product unit carries its own label. Scanning a label credits poin
 7. **Verify (public):** `GET /public/labels/verify?code=` returns `{ genuine, status, productName }` and nothing personal.
 8. **Void:** `POST /admin/product-units/:serial/void` withdraws damaged or lost labels.
 
+## Orders, stock and sales
+
+The retailer flow, end to end:
+
+1. **Order:** the retailer orders stock in the app (`POST /app/orders`, priced at the catalogue MRP). The admin moves it Placed → Confirmed → Dispatched → **Delivered** (`POST /admin/orders/:id/status`). Delivery adds every line to the retailer's stock and issues a purchase invoice (`LVK/PI/<year>/<n>`, PDF at a signed `/documents/purchase-invoices/:id` link). Retailers can cancel until Levik confirms.
+2. **Plumber sale:** a plumber scans a product and picks the retailer. The scan waits for that retailer (`GET /app/sales?decision=Pending`).
+3. **Confirm:** `POST /app/sales/:scanId/confirm` runs as one transaction:
+   - one unit leaves the retailer's stock, refused when they have none;
+   - the retailer's incentive is credited (`Retail Sale`, list price ÷ 100 × `retailerPointsPer100`);
+   - an optional bill is issued to the buyer (store header with the Levik mark, per-store `B-0001` numbers);
+   - the plumber's scan is approved automatically when every blocking check passes. Otherwise it waits for an admin, for example while the plumber's KYC is pending.
+
+   **Decline** (`/decline`) moves nothing and flags the scan for review.
+4. **Walk-in sales:** `POST /app/bills` bills a customer and takes the items out of stock.
+
+**Stock:** `inventory.quantity` is the balance, and every change appends a `stock_movements` row with the delta, the reason (Opening stock, Order delivered, Plumber sale, Customer bill, Manual adjustment) and the balance after it. A balance always equals the sum of its movements (an e2e test checks this). Manual counts from the app or the admin are kept, as Manual adjustments. Uploaded GST invoices still earn incentives through admin review but do not change stock.
+
 ## Data integrity
 
 - **Balances:**

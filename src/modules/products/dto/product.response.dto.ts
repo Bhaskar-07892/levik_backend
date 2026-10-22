@@ -41,6 +41,8 @@ export class AppProductResponseDto {
   imageUrl?: string;
   /** Points earned per approved scan (0 if not reward-eligible). */
   scanPoints: number;
+  /** Catalogue price (MRP): what retailer orders and bills are priced at by default. */
+  listPrice: number;
 }
 
 export class AppProductPageResponseDto {

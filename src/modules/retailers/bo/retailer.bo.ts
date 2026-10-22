@@ -17,9 +17,14 @@ export interface RetailerBo {
   accountStatus: RetailerAccountStatus;
   monthlyTarget: number;
   rejectionReason: string | null;
-  /** Upload keys (image IDs) of the owner's profile photo and the shop front photo. */
+  pincode: string | null;
+  pan: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Upload keys (image IDs) of the owner's profile photo, the shop front photo and the GST certificate. */
   photoKey: string | null;
   shopPhotoKey: string | null;
+  gstCertificateKey: string | null;
   lastLoginAt: Date | null;
 }
 
@@ -62,6 +67,11 @@ export interface RetailerProfileInputBo {
   monthlyTarget?: number;
   photoKey?: string | null;
   shopPhotoKey?: string | null;
+  pincode?: string | null;
+  pan?: string | null;
+  gstCertificateKey?: string | null;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface RegisterRetailerBo {
@@ -72,6 +82,13 @@ export interface RegisterRetailerBo {
   state: string;
   gstin: string | null;
   distributor: string;
+  pincode: string;
+  email: string | null;
+  pan: string | null;
+  shopPhotoKey: string | null;
+  gstCertificateKey: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface StoreBo {

@@ -9,6 +9,7 @@ import { SettingsService } from '../../settings/services/settings.service.js';
 import type { InventoryItemBo, InventoryQueryBo, InventorySummaryBo } from '../bo/inventory.bo.js';
 import { InventoryMapper } from '../mappers/inventory.mapper.js';
 import { InventoryRepository } from '../repositories/inventory.repository.js';
+import { StockService } from './stock.service.js';
 
 /** Retailer-reported stock. Not live warehouse inventory. */
 @Injectable()
@@ -19,6 +20,7 @@ export class InventoryService {
     private readonly products: ProductsService,
     private readonly settings: SettingsService,
     private readonly audit: AuditService,
+    private readonly stock: StockService,
   ) {}
 
   async list(query: InventoryQueryBo): Promise<Page<InventoryItemBo>> {
@@ -42,7 +44,7 @@ export class InventoryService {
 
   async update(actor: ActorBo, id: string, quantity: number, note?: string): Promise<InventoryItemBo> {
     const current = await this.get(id);
-    await this.inventory.update(id, quantity, actor.name);
+    await this.stock.setCount(actor, current.retailerId, current.productId, quantity, note ? `Admin count · ${note}` : 'Admin count');
     await this.audit.record(actor, {
       action: 'Inventory updated',
       entityType: 'Inventory',
@@ -52,9 +54,12 @@ export class InventoryService {
     return this.get(id);
   }
 
-  async report(retailerId: string, productId: string, quantity: number): Promise<InventoryItemBo> {
-    await this.retailers.requireApprovedActive(retailerId);
+  /** Retailer's own stock count for a product (optional; delivered orders and sales keep it current). */
+  async report(retailerId: string, productId: string, quantity: number, note?: string): Promise<InventoryItemBo> {
+    const retailer = await this.retailers.requireApprovedActive(retailerId);
     await this.products.getActive(productId);
-    return this.get(await this.inventory.upsert(retailerId, productId, quantity));
+    await this.stock.setCount({ id: retailerId, name: retailer.shopName }, retailerId, productId, quantity, note ?? 'Stock count from retailer app');
+    const id = await this.inventory.idFor(retailerId, productId);
+    return this.get(id!);
   }
 }

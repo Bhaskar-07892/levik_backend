@@ -328,6 +328,149 @@ describe('Levik API (e2e)', () => {
     });
   });
 
+  describe('orders, stock, plumber sales and bills', () => {
+    const RETAILER = 'RTL-2001';
+    let retailer: string;
+    let plumber: string;
+    let ds: DataSource;
+    const stockOf = async (productId: string) =>
+      ((await ds.query(`select quantity from inventory where retailer_id = $1 and product_id = $2`, [RETAILER, productId])) as Array<{ quantity: number }>)[0]?.quantity ?? 0;
+    const availableUnit = async (excludeProduct?: string) =>
+      (
+        (await ds.query(
+          `select u.serial, u.product_id as "productId" from product_units u join products p on p.id = u.product_id
+            where u.status = 'Available' and p.is_active and p.reward_eligible and ($1::text is null or u.product_id <> $1)
+              and not exists (select 1 from scans s where s.product_unit_serial = u.serial)
+            order by u.serial limit 1`,
+          [excludeProduct ?? null],
+        )) as Array<{ serial: string; productId: string }>
+      )[0];
+
+    beforeAll(async () => {
+      ds = app.get(DataSource);
+      const tokens = app.get(TokenService);
+      retailer = `Bearer ${(await tokens.issue({ sub: RETAILER, role: 'retailer', phone: '919829041127' })).accessToken}`;
+      // A verified plumber other than PLM-1001, so earlier tests do not use up its daily scan limit.
+      const [p] = (await ds.query(
+        `select id, mobile from plumbers where verification_status = 'Verified' and account_status = 'Active' and id <> 'PLM-1001' order by id limit 1`,
+      )) as Array<{ id: string; mobile: string }>;
+      plumber = `Bearer ${(await tokens.issue({ sub: p.id, role: 'plumber', phone: p.mobile.replace(/\D/g, '') })).accessToken}`;
+    });
+
+    it('takes an order from placed to delivered, adding stock and issuing a purchase invoice', async () => {
+      const unit = await availableUnit();
+      const before = await stockOf(unit.productId);
+      const placed = await http.post(api('/app/orders')).set('authorization', retailer).send({ lines: [{ productId: unit.productId, quantity: 3 }], note: 'E2E restock' });
+      expect(placed.status).toBe(201);
+      expect(placed.body).toMatchObject({ status: 'Placed', itemCount: 3, retailerId: RETAILER, nextStatuses: ['Confirmed', 'Cancelled'] });
+      expect(placed.body.totalValue).toBe(3 * placed.body.lines[0].unitPrice);
+      const id = placed.body.id as string;
+
+      expect((await http.get(api('/admin/orders')).query({ retailerId: RETAILER }).set('authorization', admin)).body.items.map((o: { id: string }) => o.id)).toContain(id);
+      const skip = await http.post(api(`/admin/orders/${id}/status`)).set('authorization', admin).send({ status: 'Delivered' });
+      expect(skip.status).toBe(409);
+
+      for (const status of ['Confirmed', 'Dispatched']) {
+        expect((await http.post(api(`/admin/orders/${id}/status`)).set('authorization', admin).send({ status })).body.status).toBe(status);
+      }
+      const delivered = await http.post(api(`/admin/orders/${id}/status`)).set('authorization', admin).send({ status: 'Delivered' });
+      expect(delivered.status).toBe(200);
+      expect(delivered.body.purchaseInvoiceNumber).toMatch(/^LVK\/PI\/\d{4}\/\d{5}$/);
+      expect(await stockOf(unit.productId)).toBe(before + 3);
+
+      const pdf = await http.get(delivered.body.purchaseInvoiceUrl).buffer(true).parse((res, cb) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => cb(null, Buffer.concat(chunks)));
+      });
+      expect(pdf.status).toBe(200);
+      expect(pdf.headers['content-type']).toBe('application/pdf');
+      expect((pdf.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
+
+      const moves = await http.get(api('/app/inventory/movements')).query({ productId: unit.productId }).set('authorization', retailer);
+      expect(moves.body.items[0]).toMatchObject({ reason: 'Order delivered', delta: 3, balanceAfter: before + 3, relatedType: 'order', relatedId: id });
+
+      // Delivered orders cannot be cancelled.
+      expect((await http.post(api(`/admin/orders/${id}/status`)).set('authorization', admin).send({ status: 'Cancelled', reason: 'Too late now' })).status).toBe(409);
+    });
+
+    it('credits retailer and plumber when the retailer confirms a sale, and bills the buyer', async () => {
+      const unit = await availableUnit();
+      await http.put(api(`/app/inventory/${unit.productId}`)).set('authorization', retailer).send({ quantity: 5 });
+      const scan = await http.post(api('/app/scans')).set('authorization', plumber).send({ code: unit.serial, retailerId: RETAILER });
+      expect(scan.status).toBe(201);
+      expect(scan.body).toMatchObject({ status: 'Pending', awaitingRetailer: true });
+
+      const pending = await http.get(api('/app/sales')).query({ decision: 'Pending' }).set('authorization', retailer);
+      const sale = pending.body.items.find((s: { scanId: string }) => s.scanId === scan.body.id);
+      expect(sale).toMatchObject({ decision: 'Pending', productId: unit.productId });
+      expect(sale.incentivePoints).toBeGreaterThan(0);
+
+      const confirmed = await http
+        .post(api(`/app/sales/${scan.body.id}/confirm`))
+        .set('authorization', retailer)
+        .send({ bill: { customerName: 'Aman Kumar', customerMobile: '9876543210' } });
+      expect(confirmed.status).toBe(200);
+      expect(confirmed.body).toMatchObject({ retailerPoints: sale.incentivePoints, autoApproved: true, pendingReasons: [] });
+      expect(await stockOf(unit.productId)).toBe(4);
+
+      const review = await http.get(api(`/admin/scans/${scan.body.id}`)).set('authorization', admin);
+      expect(review.body.scan).toMatchObject({ status: 'Approved', retailerDecision: 'Confirmed', retailerPoints: sale.incentivePoints });
+      expect(review.body.checks.find((c: { label: string }) => c.label === 'Retailer confirmed the sale').passed).toBe(true);
+
+      const bills = await http.get(api('/app/bills')).set('authorization', retailer);
+      expect(bills.body.items[0]).toMatchObject({ customerName: 'Aman Kumar', customerMobile: '+91 98765 43210', scanId: scan.body.id, billNumber: expect.stringMatching(/^B-\d{4}$/) });
+      expect((await http.get(confirmed.body.billPdfUrl)).headers['content-type']).toBe('application/pdf');
+
+      // A bill raised with the sale does not take stock out a second time; confirming twice is refused.
+      expect(await stockOf(unit.productId)).toBe(4);
+      expect((await http.post(api(`/app/sales/${scan.body.id}/confirm`)).set('authorization', retailer).send({})).status).toBe(409);
+    });
+
+    it('refuses to confirm a sale without stock, and a declined sale goes to Levik for review', async () => {
+      const unit = await availableUnit();
+      await http.put(api(`/app/inventory/${unit.productId}`)).set('authorization', retailer).send({ quantity: 0 });
+      const scan = await http.post(api('/app/scans')).set('authorization', plumber).send({ code: unit.serial, retailerId: RETAILER });
+
+      const noStock = await http.post(api(`/app/sales/${scan.body.id}/confirm`)).set('authorization', retailer).send({});
+      expect(noStock.status).toBe(422);
+      expect(noStock.body.code).toBe('OUT_OF_STOCK');
+
+      expect((await http.post(api(`/app/sales/${scan.body.id}/decline`)).set('authorization', retailer).send({ reason: 'Not sold from this store' })).status).toBe(204);
+      const review = await http.get(api(`/admin/scans/${scan.body.id}`)).set('authorization', admin);
+      expect(review.body.scan).toMatchObject({ status: 'Flagged', retailerDecision: 'Declined', retailerNote: 'Not sold from this store' });
+      expect(await stockOf(unit.productId)).toBe(0);
+    });
+
+    it('bills walk-in customers out of stock and keeps the ledger in step with the balance', async () => {
+      const unit = await availableUnit();
+      await http.put(api(`/app/inventory/${unit.productId}`)).set('authorization', retailer).send({ quantity: 2 });
+      const bill = await http.post(api('/app/bills')).set('authorization', retailer).send({ customerName: 'Walk-in customer', lines: [{ productId: unit.productId, quantity: 2, unitPrice: 9999 }] });
+      expect(bill.status).toBe(201);
+      expect(bill.body).toMatchObject({ totalValue: 19998, customerName: 'Walk-in customer' });
+      expect(await stockOf(unit.productId)).toBe(0);
+      const tooMany = await http.post(api('/app/bills')).set('authorization', retailer).send({ customerName: 'Walk-in customer', lines: [{ productId: unit.productId, quantity: 1 }] });
+      expect(tooMany.status).toBe(422);
+
+      // Every balance equals the sum of its movements.
+      const drift = (await ds.query(
+        `select i.retailer_id, i.product_id from inventory i
+          left join (select retailer_id, product_id, sum(delta) as total from stock_movements group by 1, 2) m using (retailer_id, product_id)
+          where i.retailer_id = $1 and i.quantity <> coalesce(m.total, 0)`,
+        [RETAILER],
+      )) as unknown[];
+      expect(drift).toEqual([]);
+    });
+
+    it('lets retailers cancel only orders Levik has not confirmed', async () => {
+      const unit = await availableUnit();
+      const placed = await http.post(api('/app/orders')).set('authorization', retailer).send({ lines: [{ productId: unit.productId, quantity: 1 }] });
+      const cancelled = await http.post(api(`/app/orders/${placed.body.id}/cancel`)).set('authorization', retailer).send({ reason: 'Ordered by mistake' });
+      expect(cancelled.body).toMatchObject({ status: 'Cancelled', cancelReason: 'Ordered by mistake' });
+      expect((await http.get(api(`/app/orders/${placed.body.id}`)).set('authorization', plumber)).status).toBe(403);
+    });
+  });
+
   describe('uploaded product images', () => {
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
     const product = (imageUrl: string, sku: string) => ({

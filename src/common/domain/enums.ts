@@ -40,10 +40,11 @@ export const POINTS_SOURCES = [
   'Redemption Reversal',
   'Manual Adjustment',
   'Opening Balance',
+  'Retail Sale',
 ] as const;
 export type PointsSource = (typeof POINTS_SOURCES)[number];
 
-export const RELATED_ENTITIES = ['scan', 'invoice', 'redemption', 'scheme'] as const;
+export const RELATED_ENTITIES = ['scan', 'invoice', 'redemption', 'scheme', 'order', 'bill'] as const;
 export type RelatedEntity = (typeof RELATED_ENTITIES)[number];
 
 export const INVOICE_STATUSES = ['Submitted', 'Under Review', 'Approved', 'Rejected', 'More Information Required'] as const;
@@ -97,14 +98,28 @@ export const AUDIT_ENTITIES = [
   'Settings',
   'Session',
   'Label',
+  'Order',
+  'Bill',
 ] as const;
 export type AuditEntity = (typeof AUDIT_ENTITIES)[number];
 
 export const PRODUCT_UNIT_STATUSES = ['Available', 'Claimed', 'Void'] as const;
 export type ProductUnitStatus = (typeof PRODUCT_UNIT_STATUSES)[number];
 
-export const UPLOAD_PURPOSES = ['scan-photo', 'invoice-document', 'product-image', 'profile-photo', 'shop-photo'] as const;
+export const UPLOAD_PURPOSES = ['scan-photo', 'invoice-document', 'product-image', 'profile-photo', 'shop-photo', 'gst-certificate'] as const;
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
+
+/** Retailer orders to Levik. Delivered orders add stock and carry a purchase invoice. */
+export const ORDER_STATUSES = ['Placed', 'Confirmed', 'Dispatched', 'Delivered', 'Cancelled'] as const;
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+/** Why a retailer's stock changed (one stock_movements row per change). */
+export const STOCK_REASONS = ['Opening stock', 'Order delivered', 'Plumber sale', 'Customer bill', 'Manual adjustment'] as const;
+export type StockReason = (typeof STOCK_REASONS)[number];
+
+/** The retailer's answer to a plumber's "bought from you" scan. */
+export const RETAILER_DECISIONS = ['Confirmed', 'Declined'] as const;
+export type RetailerDecision = (typeof RETAILER_DECISIONS)[number];
 
 export const STOCK_STATUSES = ['In Stock', 'Low Stock', 'Out of Stock'] as const;
 export type StockStatus = (typeof STOCK_STATUSES)[number];

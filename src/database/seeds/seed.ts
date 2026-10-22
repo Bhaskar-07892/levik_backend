@@ -35,6 +35,7 @@ import { createSeedDatabase, DEMO_ADMIN } from './demo/demo-data.js';
 export const DEMO_PASSWORD = 'LevikDemo@123';
 
 const APP_TABLES = [
+  'stock_movements', 'bill_lines', 'customer_bills', 'order_lines', 'orders',
   'audit_logs', 'status_events', 'ticket_notes', 'support_tickets', 'inventory', 'scheme_awards', 'schemes',
   'redemptions', 'rewards', 'invoice_lines', 'invoices', 'scans', 'uploads', 'points_ledger', 'product_units',
   'label_batches', 'products', 'plumbers', 'retailers', 'otp_challenges', 'refresh_tokens', 'admins',
@@ -157,6 +158,11 @@ export async function seedDemoData(ds: DataSource, options: { reset: boolean }):
     await chunkedInsert(m, InventoryItemDao, db.inventory.map((i) => ({
       id: i.id, retailerId: i.retailerId, productId: i.productId, quantity: i.quantity, updatedAt: d(i.updatedAt)!, updatedBy: i.updatedBy,
     })));
+    // Seeded stock enters the stock ledger as opening stock, so every balance traces back to a movement.
+    await m.query(
+      `insert into stock_movements (retailer_id, product_id, delta, balance_after, reason, note, created_at, created_by)
+       select retailer_id, product_id, quantity, quantity, 'Opening stock', 'Demo opening stock', updated_at, 'System' from inventory where quantity > 0`,
+    );
     await chunkedInsert(m, SupportTicketDao, db.tickets.map((t) => ({
       id: t.id, userId: t.userId, userRole: t.userRole, subject: t.subject, category: t.category, description: t.description,
       priority: t.priority, status: t.status, createdAt: d(t.createdAt)!, updatedAt: d(t.updatedAt)!,

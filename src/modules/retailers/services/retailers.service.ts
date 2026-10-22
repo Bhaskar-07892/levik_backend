@@ -74,6 +74,7 @@ export class RetailersService {
     const current = await this.load(id);
     if (input.photoKey) await this.uploads.assertOwned(input.photoKey, id, 'profile-photo');
     if (input.shopPhotoKey) await this.uploads.assertOwned(input.shopPhotoKey, id, 'shop-photo');
+    if (input.gstCertificateKey) await this.uploads.assertOwned(input.gstCertificateKey, id, 'gst-certificate');
     const patch: Partial<RetailerDao> = { ...input };
     if (input.mobile !== undefined) {
       const mobile = normalizeIndianMobile(input.mobile);
@@ -116,11 +117,21 @@ export class RetailersService {
     return this.get(id);
   }
 
-  async register(phoneDigits: string, input: RegisterRetailerBo): Promise<RetailerBo> {
+  /**
+   * Guest → retailer application. Documents uploaded during onboarding (as the guest `guestId`) move to the
+   * new retailer account in the same transaction.
+   */
+  async register(phoneDigits: string, guestId: string, input: RegisterRetailerBo): Promise<RetailerBo> {
     const mobile = normalizeIndianMobile(phoneDigits);
     if (!mobile) throw AppException.rule(ErrorCode.VALIDATION_FAILED, 'Sign in with an Indian mobile number to register.');
-    if (await this.retailers.findByMobile(mobile.display)) throw AppException.rule(ErrorCode.DUPLICATE, 'This number is already registered.');
-    const id = await this.retailers.insert({ ...input, mobile: mobile.display });
+    const id = await this.tx.run(async (manager) => {
+      await this.tx.lock(manager, `retailer-register:${mobile.display}`);
+      if (await this.retailers.findByMobile(mobile.display, manager)) throw AppException.rule(ErrorCode.DUPLICATE, 'This number is already registered.');
+      const retailerId = await this.retailers.insert({ ...input, mobile: mobile.display }, manager);
+      if (input.shopPhotoKey) await this.uploads.adopt(input.shopPhotoKey, guestId, retailerId, 'shop-photo', manager);
+      if (input.gstCertificateKey) await this.uploads.adopt(input.gstCertificateKey, guestId, retailerId, 'gst-certificate', manager);
+      return retailerId;
+    });
     return this.get(id);
   }
 

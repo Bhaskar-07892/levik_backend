@@ -11,18 +11,31 @@ import {
   InventoryQueryDto,
   InventorySummaryResponseDto,
   MyInventoryQueryDto,
+  MyStockMovementQueryDto,
   ReportStockRequestDto,
+  StockMovementPageResponseDto,
+  StockMovementQueryDto,
   UpdateInventoryRequestDto,
 } from '../dto/inventory.dto.js';
 import { InventoryMapper } from '../mappers/inventory.mapper.js';
 import { InventoryService } from '../services/inventory.service.js';
+import { StockService } from '../services/stock.service.js';
 
 @ApiTags('Admin · Inventory')
 @ApiBearerAuth()
 @Roles('admin')
 @Controller('admin/inventory')
 export class AdminInventoryController {
-  constructor(private readonly inventory: InventoryService) {}
+  constructor(
+    private readonly inventory: InventoryService,
+    private readonly stock: StockService,
+  ) {}
+
+  /** Stock history: every order delivery, sale, bill and manual count, newest first. */
+  @Get('movements')
+  async movements(@Query() query: StockMovementQueryDto): Promise<StockMovementPageResponseDto> {
+    return toPage(await this.stock.movements(query), InventoryMapper.movementToDto);
+  }
 
   @Get()
   async list(@Query() query: InventoryQueryDto): Promise<InventoryPageResponseDto> {
@@ -45,7 +58,15 @@ export class AdminInventoryController {
 @Roles('retailer')
 @Controller('app/inventory')
 export class AppInventoryController {
-  constructor(private readonly inventory: InventoryService) {}
+  constructor(
+    private readonly inventory: InventoryService,
+    private readonly stock: StockService,
+  ) {}
+
+  @Get('movements')
+  async movements(@CurrentUser() user: AuthenticatedUser, @Query() query: MyStockMovementQueryDto): Promise<StockMovementPageResponseDto> {
+    return toPage(await this.stock.movements({ ...query, retailerId: user.sub }), InventoryMapper.movementToDto);
+  }
 
   @Get()
   async mine(@CurrentUser() user: AuthenticatedUser, @Query() query: MyInventoryQueryDto): Promise<InventoryPageResponseDto> {

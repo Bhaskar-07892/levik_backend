@@ -67,8 +67,8 @@ export class RetailersRepository extends BaseRepository<RetailerDao> {
     return this.repo(manager).createQueryBuilder('r').setLock('pessimistic_write').where('r.id = :id', { id }).getOne();
   }
 
-  findByMobile(mobile: string): Promise<RetailerDao | null> {
-    return this.repo().findOneBy({ mobile });
+  findByMobile(mobile: string, manager?: EntityManager): Promise<RetailerDao | null> {
+    return this.repo(manager).findOneBy({ mobile });
   }
 
   async sales30d(id: string): Promise<number> {
@@ -93,8 +93,8 @@ export class RetailersRepository extends BaseRepository<RetailerDao> {
     return { items, total, page: filter.page, pageSize: filter.pageSize };
   }
 
-  async insert(row: Partial<RetailerDao>): Promise<string> {
-    const result = await this.repo().createQueryBuilder().insert().values(row).returning(['id']).execute();
+  async insert(row: Partial<RetailerDao>, manager?: EntityManager): Promise<string> {
+    const result = await this.repo(manager).createQueryBuilder().insert().values(row).returning(['id']).execute();
     return (result.raw as Array<{ id: string }>)[0].id;
   }
 

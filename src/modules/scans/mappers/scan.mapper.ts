@@ -1,10 +1,10 @@
 import { fileUrl } from '../../uploads/file-url.js';
 import { AuditMapper } from '../../audit/mappers/audit.mapper.js';
 import { SchemeMapper } from '../../schemes/mappers/scheme.mapper.js';
-import type { ScanBo, ScanReviewBo } from '../bo/scan.bo.js';
+import type { RetailerSaleBo, ScanBo, ScanReviewBo } from '../bo/scan.bo.js';
 import type { ScanDao } from '../dao/scan.dao.js';
-import type { AppScanResponseDto, ScanResponseDto, ScanReviewResponseDto } from '../dto/scan.response.dto.js';
-import { imageLink } from '../../uploads/file-url.js';
+import type { AppScanResponseDto, RetailerSaleResponseDto, ScanResponseDto, ScanReviewResponseDto } from '../dto/scan.response.dto.js';
+import { documentUrl, imageLink } from '../../uploads/file-url.js';
 
 export const ScanMapper = {
   toBo: (d: ScanDao): ScanBo => {
@@ -30,6 +30,7 @@ export const ScanMapper = {
         plumberPoints: product.plumberPoints,
         rewardEligible: product.rewardEligible,
         isActive: product.isActive,
+        mrp: product.mrp,
       },
       retailer: d.retailer ? { id: d.retailer.id, shopName: d.retailer.shopName, verificationStatus: d.retailer.verificationStatus } : null,
       submittedCode: d.submittedCode,
@@ -47,6 +48,10 @@ export const ScanMapper = {
       flagReason: d.flagReason,
       reviewedBy: d.reviewedBy,
       reviewedAt: d.reviewedAt,
+      retailerDecision: d.retailerDecision,
+      retailerDecidedAt: d.retailerDecidedAt,
+      retailerNote: d.retailerNote,
+      retailerPoints: d.retailerPoints,
     };
   },
   toDto: (b: ScanBo): ScanResponseDto => ({
@@ -64,6 +69,10 @@ export const ScanMapper = {
     flagReason: b.flagReason ?? undefined,
     reviewedBy: b.reviewedBy ?? undefined,
     reviewedAt: b.reviewedAt?.toISOString(),
+    retailerDecision: b.retailerDecision ?? undefined,
+    retailerDecidedAt: b.retailerDecidedAt?.toISOString(),
+    retailerNote: b.retailerNote ?? undefined,
+    retailerPoints: b.retailerPoints ?? undefined,
   }),
   /** Plumber's own view: no reviewer identity or internal flags. */
   toAppDto: (b: ScanBo): AppScanResponseDto => ({
@@ -79,6 +88,27 @@ export const ScanMapper = {
     status: b.status === 'Flagged' ? 'Pending' : b.status,
     points: b.expectedPoints,
     rejectionReason: b.rejectionReason ?? undefined,
+    awaitingRetailer: !!b.retailer && !b.retailerDecision && (b.status === 'Pending' || b.status === 'Flagged'),
+    retailerDecision: b.retailerDecision ?? undefined,
+  }),
+  saleToDto: (s: RetailerSaleBo): RetailerSaleResponseDto => ({
+    scanId: s.scan.id,
+    plumberName: s.scan.plumber.name,
+    plumberMobile: s.scan.plumber.mobile,
+    productId: s.scan.product.id,
+    productName: s.scan.product.name,
+    modelCode: s.scan.product.modelCode,
+    imageUrl: imageLink(s.scan.product.imageUrl),
+    serial: s.scan.submittedCode,
+    scannedAt: s.scan.scannedAt.toISOString(),
+    siteLocation: s.scan.siteLocation,
+    decision: s.scan.retailerDecision ?? 'Pending',
+    decidedAt: s.scan.retailerDecidedAt?.toISOString(),
+    incentivePoints: s.incentivePoints,
+    listPrice: s.scan.product.mrp,
+    billId: s.bill?.id,
+    billNumber: s.bill?.billNumber,
+    billPdfUrl: s.bill ? documentUrl('bills', s.bill.id) : undefined,
   }),
   reviewToDto: (b: ScanReviewBo): ScanReviewResponseDto => ({
     scan: ScanMapper.toDto(b.scan),

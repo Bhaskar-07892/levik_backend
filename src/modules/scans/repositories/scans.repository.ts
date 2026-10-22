@@ -79,4 +79,33 @@ export class ScansRepository extends BaseRepository<ScanDao> {
   async update(id: string, patch: Partial<ScanDao>, manager?: EntityManager): Promise<void> {
     await this.repo(manager).update({ id }, patch);
   }
+
+  /** Scans where a plumber said they bought from this retailer, newest first. */
+  async findRetailerSales(retailerId: string, decision: 'Pending' | 'Confirmed' | 'Declined' | undefined, page: number, pageSize: number): Promise<Page<ScanDao>> {
+    const qb = this.repo()
+      .createQueryBuilder('s')
+      .innerJoinAndSelect('s.plumber', 'pl')
+      .innerJoinAndSelect('s.product', 'p')
+      .leftJoinAndSelect('s.retailer', 'r')
+      .where('s.retailerId = :retailerId', { retailerId });
+    if (decision === 'Pending') qb.andWhere("s.retailerDecision IS NULL AND s.status IN ('Pending', 'Flagged')");
+    else if (decision) qb.andWhere('s.retailerDecision = :decision', { decision });
+    const [items, total] = await qb
+      .orderBy('s.scannedAt', 'DESC')
+      .addOrderBy('s.id', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+    return { items, total, page, pageSize };
+  }
+
+  async billsForScans(scanIds: string[]): Promise<Map<string, { id: string; billNumber: string }>> {
+    if (scanIds.length === 0) return new Map();
+    const rows = (await this.dataSource.query(`select scan_id, id, bill_number from customer_bills where scan_id = any($1)`, [scanIds])) as Array<{
+      scan_id: string;
+      id: string;
+      bill_number: string;
+    }>;
+    return new Map(rows.map((r) => [r.scan_id, { id: r.id, billNumber: r.bill_number }]));
+  }
 }

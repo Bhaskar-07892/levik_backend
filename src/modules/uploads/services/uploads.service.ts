@@ -18,6 +18,7 @@ const ALLOWED: Record<UploadPurpose, Record<string, string>> = {
   'profile-photo': IMAGES,
   'shop-photo': IMAGES,
   'invoice-document': { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' },
+  'gst-certificate': { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' },
 };
 
 /** Lifetime of the bucket's presigned links behind a file link redirect. */
@@ -117,6 +118,15 @@ export class UploadsService {
       return { redirect: await this.storage.signedUrl(key, PRESIGNED_TTL_SECONDS), maxAgeSeconds: PRESIGNED_TTL_SECONDS - 300 };
     }
     return { stream: await this.storage.get(key), contentType: upload.contentType };
+  }
+
+  /**
+   * Onboarding: files uploaded while signed in as a guest move to the account created at registration.
+   * Only the guest's own uploads of the expected purpose can be adopted.
+   */
+  async adopt(key: string, fromOwnerId: string, toOwnerId: string, purpose: UploadPurpose, manager?: EntityManager): Promise<void> {
+    await this.assertOwned(key, fromOwnerId, purpose, manager);
+    await this.uploads.reassign(key, toOwnerId, manager);
   }
 
   /** For admin-managed images (any admin may reuse another admin's upload): the key exists and has this purpose. */

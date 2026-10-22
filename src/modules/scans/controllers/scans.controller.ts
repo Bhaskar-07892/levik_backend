@@ -7,10 +7,13 @@ import { ApprovalResultResponseDto } from '../../../common/dto/check.response.dt
 import { toPage } from '../../../common/dto/pagination.dto.js';
 import { ReasonRequestDto } from '../../../common/dto/reason.request.dto.js';
 import type { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface.js';
-import { ApproveScanRequestDto, MyScanQueryDto, ScanQueryDto, SubmitScanRequestDto } from '../dto/scan.request.dto.js';
+import { ApproveScanRequestDto, ConfirmSaleRequestDto, MyScanQueryDto, RetailerSaleQueryDto, ScanQueryDto, SubmitScanRequestDto } from '../dto/scan.request.dto.js';
+import { documentUrl } from '../../uploads/file-url.js';
 import {
   AppScanPageResponseDto,
   AppScanResponseDto,
+  ConfirmSaleResponseDto,
+  RetailerSalePageResponseDto,
   ScanPageResponseDto,
   ScanResponseDto,
   ScanReviewResponseDto,
@@ -88,5 +91,40 @@ export class AppScansController {
   @Get(':id')
   async get(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<AppScanResponseDto> {
     return ScanMapper.toAppDto(await this.scans.get(id, user.sub));
+  }
+}
+
+@ApiTags('App · Sales')
+@ApiBearerAuth()
+@Roles('retailer')
+@Controller('app/sales')
+export class AppSalesController {
+  constructor(private readonly scans: ScansService) {}
+
+  /** Plumber scans that name this store as the seller. decision=Pending lists those waiting for you. */
+  @Get()
+  async list(@CurrentUser() user: AuthenticatedUser, @Query() query: RetailerSaleQueryDto): Promise<RetailerSalePageResponseDto> {
+    return toPage(await this.scans.retailerSales(user.sub, query), ScanMapper.saleToDto);
+  }
+
+  /** Confirms the sale: stock −1, retail incentive, optional bill, and the plumber is credited when checks pass. */
+  @Post(':scanId/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirm(@CurrentUser() user: AuthenticatedUser, @Param('scanId') scanId: string, @Body() body: ConfirmSaleRequestDto): Promise<ConfirmSaleResponseDto> {
+    const result = await this.scans.confirmSale(user.sub, scanId, body);
+    return {
+      retailerPoints: result.retailerPoints,
+      billId: result.billId ?? undefined,
+      billPdfUrl: result.billId ? documentUrl('bills', result.billId) : undefined,
+      autoApproved: result.autoApproved,
+      pendingReasons: result.pendingReasons,
+    };
+  }
+
+  /** "I did not sell this": nothing moves and Levik reviews the scan. */
+  @Post(':scanId/decline')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async decline(@CurrentUser() user: AuthenticatedUser, @Param('scanId') scanId: string, @Body() body: ReasonRequestDto): Promise<void> {
+    await this.scans.declineSale(user.sub, scanId, body.reason);
   }
 }

@@ -13,6 +13,10 @@ export class UploadsRepository extends BaseRepository<UploadDao> {
     await this.repo().insert(row);
   }
 
+  async reassign(key: string, ownerId: string, manager?: EntityManager): Promise<void> {
+    await this.repo(manager).update({ key }, { ownerId });
+  }
+
   findByKey(key: string, manager?: EntityManager): Promise<UploadDao | null> {
     return this.repo(manager).findOneBy({ key });
   }

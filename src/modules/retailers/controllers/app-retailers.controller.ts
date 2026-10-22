@@ -32,7 +32,7 @@ export class AppRetailersController {
     @UserAgent() ua?: string,
   ): Promise<AuthTokensResponseDto> {
     if (!user.phone) throw AppException.rule(ErrorCode.REGISTRATION_REQUIRED, 'Verify your phone number first.');
-    const retailer = await this.retailers.register(user.phone, {
+    const retailer = await this.retailers.register(user.phone, user.sub, {
       shopName: body.shopName,
       ownerName: body.ownerName,
       address: body.address,
@@ -40,6 +40,13 @@ export class AppRetailersController {
       state: body.state,
       gstin: body.gstin || null,
       distributor: body.distributor ?? '',
+      pincode: body.pincode,
+      email: body.email || null,
+      pan: body.pan || null,
+      shopPhotoKey: body.shopPhotoKey ?? null,
+      gstCertificateKey: body.gstCertificateKey ?? null,
+      latitude: body.latitude ?? null,
+      longitude: body.longitude ?? null,
     });
     const tokens = await this.auth.issueForParticipant(
       { id: retailer.id, role: 'retailer', name: retailer.shopName, location: `${retailer.city}, ${retailer.state}`, accountStatus: retailer.accountStatus, verified: false },
